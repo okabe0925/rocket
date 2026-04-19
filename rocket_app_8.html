@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Rocket</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f4;
+    --bg3: #f0efeb;
+    --text: #1a1a18;
+    --text2: #6b6b67;
+    --text3: #9c9a92;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --accent: #2B4C8C;
+    --accent-bg: #EEF2FA;
+    --accent-dark: #1E3A5F;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a; --bg2: #242422; --bg3: #2a2a28;
+      --text: #e8e6de; --text2: #9c9a92; --text3: #6b6b67;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.18);
+      --accent-bg: #1a2d4a;
+    }
+  }
+
+  /* ===== AUTH ===== */
+  .auth-overlay { position: fixed; inset: 0; background: var(--bg3); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .auth-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); width: 100%; max-width: 380px; padding: 32px 28px; }
+  .auth-logo { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 28px; }
+  .auth-logo-icon { width: 36px; height: 36px; background: var(--accent-dark); border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+  .auth-logo-text { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+  .auth-title { font-size: 16px; font-weight: 500; text-align: center; margin-bottom: 6px; }
+  .auth-sub { font-size: 13px; color: var(--text2); text-align: center; margin-bottom: 24px; }
+  .auth-field { margin-bottom: 14px; }
+  .auth-label { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 5px; }
+  .auth-input { width: 100%; padding: 11px 13px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); font-size: 14px; color: var(--text); outline: none; font-family: inherit; }
+  .auth-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+  .auth-btn { width: 100%; padding: 12px; border-radius: var(--radius); border: none; background: #2B4C8C; color: white; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; margin-top: 6px; transition: opacity 0.15s; }
+  .auth-btn:hover { opacity: 0.88; }
+  .auth-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0; }
+  .auth-divider-line { flex: 1; height: 0.5px; background: var(--border); }
+  .auth-divider-text { font-size: 12px; color: var(--text2); }
+  .auth-social { width: 100%; padding: 10px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); font-size: 13px; color: var(--text); cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.12s; }
+  .auth-social:hover { background: var(--bg2); }
+  .auth-switch { text-align: center; margin-top: 20px; font-size: 13px; color: var(--text2); }
+  .auth-switch a { color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 500; }
+  .auth-error { font-size: 12px; color: #DC2626; background: #FEF2F2; border: 0.5px solid #FECACA; padding: 8px 12px; border-radius: var(--radius); margin-bottom: 14px; display: none; }
+  .auth-error.show { display: block; }
+
+  /* ===== USER MENU ===== */
+  .user-menu-wrap { position: relative; cursor: pointer; }
+  .user-menu { position: absolute; bottom: calc(100% + 8px); left: 0; right: 0; background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 50; display: none; }
+  .user-menu.open { display: block; }
+  .user-menu-item { display: flex; align-items: center; gap: 10px; padding: 11px 14px; font-size: 13px; color: var(--text); cursor: pointer; transition: background 0.12s; }
+  .user-menu-item:hover { background: var(--bg2); }
+  .user-menu-item.danger { color: #DC2626; }
+  .user-menu-divider { height: 0.5px; background: var(--border); }
+
+  /* ===== MATCH FILTER POPUP ===== */
+  .popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 150; display: none; align-items: flex-end; justify-content: center; }
+  .popup-overlay.open { display: flex; }
+  @media (min-width: 641px) { .popup-overlay { align-items: center; } }
+  .popup-sheet { background: var(--bg); border-radius: 16px 16px 0 0; width: 100%; max-width: 480px; padding: 20px; max-height: 85vh; overflow-y: auto; }
+  @media (min-width: 641px) { .popup-sheet { border-radius: 16px; max-height: 80vh; } }
+  .popup-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 0 auto 18px; }
+  @media (min-width: 641px) { .popup-handle { display: none; } }
+  .popup-title { font-size: 15px; font-weight: 500; margin-bottom: 18px; }
+  .popup-section { margin-bottom: 18px; }
+  .popup-label { font-size: 11px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .popup-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pchip { font-size: 12px; padding: 6px 12px; border-radius: 20px; border: 0.5px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; user-select: none; transition: all 0.12s; }
+  .pchip.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+  .popup-footer { display: flex; gap: 10px; margin-top: 20px; padding-top: 16px; border-top: 0.5px solid var(--border); }
+
+  /* ===== APPLY POPUP ===== */
+  .apply-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 160; display: none; align-items: flex-end; justify-content: center; }
+  .apply-overlay.open { display: flex; }
+  @media (min-width: 641px) { .apply-overlay { align-items: center; } }
+  .apply-sheet { background: var(--bg); border-radius: 16px 16px 0 0; width: 100%; max-width: 520px; padding: 22px 22px 28px; max-height: 90vh; overflow-y: auto; }
+  @media (min-width: 641px) { .apply-sheet { border-radius: 16px; } }
+  .apply-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 0 auto 18px; }
+  @media (min-width: 641px) { .apply-handle { display: none; } }
+  .apply-idea-card { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; display: flex; gap: 11px; align-items: center; margin-bottom: 18px; }
+  .apply-step { display: flex; gap: 6px; margin-bottom: 16px; }
+  .apply-step-item { flex: 1; height: 3px; border-radius: 2px; background: var(--border); }
+  .apply-step-item.done { background: var(--accent); }
+  .apply-step-item.active { background: var(--accent); opacity: 0.5; }
+  .apply-label { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
+  .apply-textarea { width: 100%; padding: 11px 13px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); font-size: 14px; color: var(--text); outline: none; font-family: inherit; resize: vertical; min-height: 120px; line-height: 1.65; }
+  .apply-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+  .apply-char { font-size: 11px; color: var(--text2); text-align: right; margin-top: 4px; }
+  .apply-hint { font-size: 12px; color: var(--text2); background: var(--bg2); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 16px; line-height: 1.6; }
+  .apply-success { text-align: center; padding: 20px 0 10px; }
+  .apply-success-icon { width: 56px; height: 56px; background: var(--accent-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+  .apply-footer { display: flex; gap: 10px; margin-top: 18px; }
+
+  /* ===== IDEA DETAIL ===== */
+  .detail-back { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--accent); cursor: pointer; border: none; background: none; font-family: inherit; padding: 0; }
+  html, body { height: 100%; font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic', sans-serif; background: var(--bg3); color: var(--text); font-size: 14px; }
+
+  /* ===== LAYOUT ===== */
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* Desktop sidebar */
+  .sidebar {
+    width: 220px; flex-shrink: 0;
+    background: var(--bg); border-right: 0.5px solid var(--border);
+    display: flex; flex-direction: column;
+    transition: transform 0.25s;
+  }
+  .logo { padding: 18px 14px 14px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .logo-icon { width: 30px; height: 30px; background: var(--accent-dark); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .logo-mark { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
+  .logo-sub { font-size: 10px; color: var(--text2); margin-top: 1px; }
+  .nav { padding: 10px 8px; flex: 1; overflow-y: auto; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text2); margin-bottom: 2px; transition: background 0.12s; user-select: none; border: none; background: none; width: 100%; text-align: left; }
+  .nav-item:hover { background: var(--bg2); color: var(--text); }
+  .nav-item.active { background: var(--accent-bg); color: var(--accent); font-weight: 500; }
+  .nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
+  .nav-badge { margin-left: auto; background: var(--accent); color: white; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; }
+  .sidebar-profile { padding: 10px 12px; border-top: 0.5px solid var(--border); display: flex; align-items: center; gap: 10px; }
+
+  /* Mobile bottom nav */
+  .bottom-nav {
+    display: none;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--bg); border-top: 0.5px solid var(--border);
+    padding: 6px 0 max(6px, env(safe-area-inset-bottom));
+    z-index: 100;
+  }
+  .bottom-nav-inner { display: flex; justify-content: space-around; align-items: center; }
+  .bn-item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 12px; cursor: pointer; border: none; background: none; color: var(--text2); font-size: 10px; font-family: inherit; position: relative; }
+  .bn-item.active { color: var(--accent); }
+  .bn-item svg { width: 22px; height: 22px; }
+  .bn-badge { position: absolute; top: 2px; right: 8px; width: 16px; height: 16px; background: var(--accent); color: white; font-size: 9px; font-weight: 600; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+
+  /* Mobile topbar */
+  .mobile-topbar {
+    display: none;
+    background: var(--bg); border-bottom: 0.5px solid var(--border);
+    padding: max(12px, env(safe-area-inset-top)) 16px 12px;
+    align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .mobile-logo { display: flex; align-items: center; gap: 8px; }
+  .mobile-logo-icon { width: 28px; height: 28px; background: var(--accent-dark); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+  .mobile-logo-text { font-size: 15px; font-weight: 700; letter-spacing: -0.5px; }
+
+  /* Main content */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  .topbar { background: var(--bg); border-bottom: 0.5px solid var(--border); padding: 0 18px; height: 50px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .topbar-title { font-size: 15px; font-weight: 500; }
+  .content { flex: 1; overflow-y: auto; padding: 18px; -webkit-overflow-scrolling: touch; }
+  .tab-panel { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  .tab-panel.active { display: flex; }
+
+  /* ===== COMPONENTS ===== */
+  .av { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 500; flex-shrink: 0; }
+  .av-wrap { position: relative; flex-shrink: 0; }
+  .status-dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--bg); position: absolute; bottom: 1px; right: 1px; }
+  .btn { padding: 7px 14px; border-radius: var(--radius); font-size: 13px; cursor: pointer; border: 0.5px solid var(--border2); background: transparent; color: var(--text); font-family: inherit; transition: background 0.12s; }
+  .btn:hover { background: var(--bg2); }
+  .btn-primary { background: var(--accent-dark); color: white; border-color: var(--accent-dark); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-sm { padding: 5px 11px; font-size: 12px; border-radius: var(--radius); cursor: pointer; border: 0.5px solid var(--border2); background: transparent; color: var(--text); font-family: inherit; }
+  .tag { font-size: 11px; padding: 3px 8px; border-radius: 20px; background: var(--accent-bg); color: var(--accent); }
+  .tag-gray { font-size: 11px; padding: 3px 8px; border-radius: 20px; background: var(--bg2); color: var(--text2); }
+  .tags { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
+  .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 12px; }
+  .section-heading { font-size: 11px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; }
+
+  /* ===== IDEAS ===== */
+  .search-bar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+  .search-input-wrap { position: relative; flex: 1; }
+  .search-input-wrap svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text2); pointer-events: none; }
+  .search-input { width: 100%; padding: 9px 12px 9px 34px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); font-size: 13px; color: var(--text); outline: none; font-family: inherit; }
+  .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+  .filter-btn { display: flex; align-items: center; gap: 5px; padding: 8px 12px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); font-size: 13px; color: var(--text2); cursor: pointer; white-space: nowrap; font-family: inherit; flex-shrink: 0; }
+  .filter-btn:hover { background: var(--bg2); }
+  .filter-btn.has-filter { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+  .filter-panel { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 14px; display: none; }
+  .filter-panel.open { display: block; }
+  .filter-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  @media (max-width: 480px) { .filter-grid { grid-template-columns: 1fr; } }
+  .filter-label { font-size: 11px; font-weight: 500; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .filter-sel { width: 100%; padding: 8px 30px 8px 10px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); font-size: 13px; color: var(--text); outline: none; font-family: inherit; appearance: none; cursor: pointer; }
+  .filter-sel:focus { border-color: var(--accent); }
+  .filter-sel-wrap { position: relative; }
+  .filter-sel-wrap svg { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text2); }
+  .filter-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .fchip { font-size: 11px; padding: 5px 10px; border-radius: 20px; border: 0.5px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; user-select: none; transition: all 0.12s; }
+  .fchip.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+  .filter-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 0.5px solid var(--border); }
+  .active-filter-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+  .active-ftag { font-size: 11px; padding: 3px 8px 3px 10px; border-radius: 20px; background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; gap: 4px; }
+  .active-ftag-x { cursor: pointer; font-size: 13px; opacity: 0.7; }
+  .result-count { font-size: 11px; color: var(--text2); margin-bottom: 12px; }
+  .no-results { text-align: center; padding: 48px 0; color: var(--text2); }
+  .no-results-icon { font-size: 32px; margin-bottom: 10px; }
+  .no-results-text { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .no-results-sub { font-size: 13px; }
+  .idea-header { display: flex; gap: 11px; margin-bottom: 10px; }
+  .idea-icon { width: 40px; height: 40px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .idea-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .idea-desc { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  .idea-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 0.5px solid var(--border); flex-wrap: wrap; gap: 8px; }
+  .founder-info { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text2); }
+
+  /* ===== MATCH ===== */
+  .match-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 11px; }
+  @media (max-width: 480px) { .match-grid { grid-template-columns: 1fr; } }
+  .match-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px; }
+  .match-score { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #ECFDF5; color: #065F46; font-weight: 500; margin-left: auto; }
+  .skill-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 11px; }
+  .skill-tag { font-size: 10px; padding: 2px 7px; border-radius: 20px; background: var(--bg2); color: var(--text2); }
+
+  /* ===== CHAT ===== */
+  .chat-layout { flex: 1; display: flex; overflow: hidden; }
+  .chat-list-pane { width: 230px; border-right: 0.5px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; background: var(--bg); transition: transform 0.25s, width 0.25s; }
+  .chat-list-hd { padding: 12px 13px 10px; border-bottom: 0.5px solid var(--border); }
+  .chat-list-title { font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+  .chat-search-wrap { position: relative; }
+  .chat-search { width: 100%; padding: 6px 10px 6px 28px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg2); font-size: 12px; color: var(--text); outline: none; font-family: inherit; }
+  .chat-search:focus { border-color: var(--accent); }
+  .search-ico { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--text2); }
+  .thread-list { flex: 1; overflow-y: auto; }
+  .thread { display: flex; align-items: center; gap: 9px; padding: 10px 12px; cursor: pointer; border-bottom: 0.5px solid var(--border); transition: background 0.12s; }
+  .thread:hover { background: var(--bg2); }
+  .thread.active { background: var(--accent-bg); }
+  .thread-body { flex: 1; min-width: 0; }
+  .thread-name { font-size: 13px; font-weight: 500; }
+  .thread.active .thread-name { color: var(--accent); }
+  .thread-preview { font-size: 11px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+  .thread-login { font-size: 10px; color: var(--text3); display: flex; align-items: center; gap: 3px; margin-top: 2px; }
+  .thread-login.recent { color: #16A34A; }
+  .thread-login.mid { color: #CA8A04; }
+  .unread-badge { min-width: 17px; height: 17px; background: var(--accent); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; padding: 0 4px; flex-shrink: 0; }
+  .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .chat-hd { padding: 10px 14px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 10px; flex-shrink: 0; background: var(--bg); }
+  .chat-hd-name { font-size: 13px; font-weight: 500; }
+  .chat-hd-sub { font-size: 11px; color: var(--text2); }
+  .chat-back { display: none; border: none; background: none; cursor: pointer; color: var(--accent); padding: 4px; margin-right: 2px; }
+  .messages { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; background: var(--bg3); -webkit-overflow-scrolling: touch; }
+  .ctx-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 10px 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+  .ctx-icon { width: 32px; height: 32px; border-radius: var(--radius); background: var(--accent-bg); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .ctx-tag { font-size: 10px; background: var(--accent-bg); color: var(--accent); padding: 2px 7px; border-radius: 10px; margin-left: auto; flex-shrink: 0; }
+  .date-div { text-align: center; margin: 2px 0 6px; }
+  .date-lbl { font-size: 11px; color: var(--text2); background: var(--bg2); padding: 2px 10px; border-radius: 20px; display: inline-block; }
+  .msg { display: flex; gap: 7px; align-items: flex-end; }
+  .msg.mine { flex-direction: row-reverse; }
+  .bubble { max-width: 70%; padding: 9px 12px; border-radius: 14px; font-size: 13px; line-height: 1.5; word-break: break-word; }
+  .bubble-other { background: var(--bg); border: 0.5px solid var(--border); border-bottom-left-radius: 4px; }
+  .bubble-mine { background: #2B4C8C; color: white; border-bottom-right-radius: 4px; }
+  .msg-time { font-size: 10px; color: var(--text3); }
+  .check-icon { color: #6366F1; }
+  .chat-input-wrap { padding: 10px 12px; border-top: 0.5px solid var(--border); display: flex; flex-direction: column; gap: 6px; background: var(--bg); }
+  .input-row { display: flex; gap: 8px; align-items: center; }
+  .chat-input { flex: 1; padding: 9px 13px; border-radius: 20px; border: 0.5px solid var(--border2); background: var(--bg2); font-size: 13px; color: var(--text); outline: none; font-family: inherit; }
+  .chat-input:focus { border-color: var(--accent); background: var(--bg); }
+  .send-btn { width: 36px; height: 36px; border-radius: 50%; background: #2B4C8C; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .ia-btn { width: 28px; height: 28px; border-radius: var(--radius); border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text2); }
+  .ia-btn:hover { background: var(--bg2); }
+
+  /* ===== POST FORM ===== */
+  .form-section { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 12px; }
+  .sec-head { font-size: 11px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; }
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  .label { font-size: 13px; font-weight: 500; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .req { font-size: 11px; color: white; background: var(--accent); padding: 1px 6px; border-radius: 4px; }
+  .opt { font-size: 11px; color: var(--text2); background: var(--bg2); padding: 1px 6px; border-radius: 4px; }
+  .f-input { width: 100%; padding: 10px 12px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); font-size: 14px; color: var(--text); outline: none; font-family: inherit; }
+  .f-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+  .f-textarea { width: 100%; padding: 10px 12px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); font-size: 14px; color: var(--text); outline: none; font-family: inherit; resize: vertical; min-height: 90px; line-height: 1.6; }
+  .f-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+  .char-count { font-size: 11px; color: var(--text2); text-align: right; margin-top: 3px; }
+  .sel-wrap { position: relative; }
+  .sel-wrap select { width: 100%; padding: 10px 32px 10px 12px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); font-size: 14px; color: var(--text); outline: none; font-family: inherit; appearance: none; cursor: pointer; }
+  .sel-wrap select:focus { border-color: var(--accent); }
+  .sel-arrow { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text2); }
+  .url-wrap { position: relative; }
+  .url-pfx { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--text2); pointer-events: none; }
+  .url-input { width: 100%; padding: 10px 12px 10px 54px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); font-size: 14px; color: var(--text); outline: none; font-family: inherit; }
+  .url-input:focus { border-color: var(--accent); }
+  .hint { font-size: 11px; color: var(--text2); margin-top: 4px; }
+  .spec-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 7px; }
+  @media (max-width: 480px) { .spec-grid { grid-template-columns: 1fr; } }
+  .spec-item { display: flex; align-items: center; gap: 8px; padding: 10px 11px; border-radius: var(--radius); border: 0.5px solid var(--border); cursor: pointer; user-select: none; font-size: 13px; transition: all 0.12s; }
+  .spec-item:hover { background: var(--bg2); }
+  .spec-item.checked { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
+  .spec-cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--border2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .spec-item.checked .spec-cb { background: var(--accent); border-color: var(--accent); }
+  .spec-ck { display: none; }
+  .spec-item.checked .spec-ck { display: block; }
+  .radio-group { display: flex; flex-direction: column; gap: 7px; }
+  .radio-item { display: flex; align-items: center; gap: 10px; padding: 11px 13px; border-radius: var(--radius); border: 0.5px solid var(--border); cursor: pointer; user-select: none; font-size: 13px; transition: all 0.12s; }
+  .radio-item:hover { background: var(--bg2); }
+  .radio-item.selected { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 500; }
+  .radio-circle { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--border2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .radio-item.selected .radio-circle { border-color: var(--accent); }
+  .radio-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: none; }
+  .radio-item.selected .radio-dot { display: block; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .two-col { grid-template-columns: 1fr; } }
+  .sel-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .sel-tag { font-size: 11px; padding: 3px 9px; border-radius: 20px; background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; gap: 4px; }
+  .sel-tag-x { cursor: pointer; font-size: 12px; }
+  .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+
+  /* ===== PROFILE ===== */
+  .p-hero { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 12px; }
+  .hero-cover { height: 68px; background: linear-gradient(135deg, #1E3A5F, #4A72B8); }
+  .hero-body { padding: 0 16px 16px; }
+  .av-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: -22px; margin-bottom: 10px; }
+  .av-large { width: 50px; height: 50px; border-radius: 50%; border: 3px solid var(--bg); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 500; }
+  .p-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 3px; }
+  .p-name { font-size: 16px; font-weight: 500; }
+  .role-badge { font-size: 11px; padding: 2px 7px; border-radius: 20px; background: var(--accent-bg); color: var(--accent); font-weight: 500; }
+  .p-sub { font-size: 12px; color: var(--text2); margin-bottom: 9px; }
+  .p-bio { font-size: 13px; line-height: 1.65; margin-bottom: 11px; }
+  .stats-row { display: flex; gap: 16px; padding-top: 11px; border-top: 0.5px solid var(--border); flex-wrap: wrap; }
+  .stat-num { font-size: 15px; font-weight: 500; }
+  .stat-lbl { font-size: 10px; color: var(--text2); margin-top: 1px; }
+  .career-item { display: flex; gap: 10px; margin-bottom: 0; padding: 14px 0; border-bottom: 0.5px solid var(--border); }
+  .career-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .dot-col { display: flex; flex-direction: column; align-items: center; padding-top: 4px; }
+  .cdot { width: 9px; height: 9px; border-radius: 50%; background: #2B4C8C; flex-shrink: 0; }
+  .cline { width: 1px; background: var(--border); flex: 1; margin-top: 3px; }
+  .career-item:last-child .cline { display: none; }
+  .career-role { font-size: 13px; font-weight: 500; }
+  .career-co { font-size: 12px; color: var(--text2); }
+  .career-period { font-size: 11px; color: var(--text2); }
+  .spec-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 4px 10px; border-radius: var(--radius); border: 0.5px solid var(--border); background: var(--bg2); margin: 0 5px 5px 0; }
+  .chip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 640px) {
+    .sidebar { display: none; }
+    .mobile-topbar { display: flex; }
+    .bottom-nav { display: block; }
+    .main { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+    .content { padding: 12px; }
+    .topbar { display: none; }
+    /* チャット */
+    .chat-layout { flex-direction: column; }
+    .chat-list-pane { width: 100%; border-right: none; border-bottom: 0.5px solid var(--border); max-height: 100%; }
+    .chat-list-pane.hidden { display: none; }
+    .chat-main.hidden { display: none; }
+    .chat-back { display: flex; }
+    .bubble { max-width: 84%; }
+    /* グリッド */
+    .match-grid { grid-template-columns: 1fr; }
+    .spec-grid { grid-template-columns: 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    #otherCondGrid { grid-template-columns: 1fr !important; }
+    .filter-grid { grid-template-columns: 1fr; }
+    /* カード */
+    .idea-footer { flex-direction: column; align-items: flex-start; }
+    .idea-footer > div:last-child { width: 100%; display: flex; gap: 8px; }
+    .idea-footer > div:last-child button { flex: 1; padding: 9px 0; font-size: 13px; }
+    /* ポップアップ */
+    .apply-sheet { padding: 18px 16px 28px; }
+    .popup-sheet { padding: 18px 16px 28px; }
+    /* プロフィール */
+    .stats-row { gap: 14px; flex-wrap: wrap; }
+    .p-hero .av-row { margin-top: -20px; }
+    /* 編集フォーム */
+    .career-edit-item > div { grid-template-columns: 1fr !important; }
+    /* 詳細・掲載者 */
+    .detail-back { font-size: 12px; }
+    .match-card { padding: 13px; }
+    /* 検索バー */
+    .search-bar { flex-wrap: nowrap; }
+    /* 認証 */
+    .auth-card { padding: 28px 18px; }
+  }
+  @media (min-width: 641px) {
+    .chat-list-pane { display: flex !important; flex-direction: column; }
+    .chat-main { display: flex !important; }
+  }
+  @media (max-width: 400px) {
+    .content { padding: 10px; }
+    .card { padding: 12px; }
+    .form-section { padding: 13px; }
+    .bn-item { padding: 4px 6px; font-size: 9px; }
+    .bn-item svg { width: 20px; height: 20px; }
+    .auth-card { padding: 22px 16px; }
+    .hero-stats { gap: 14px; }
+    .apply-footer { flex-direction: column; }
+    .popup-footer { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Desktop Sidebar -->
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
+          <path d="M9 2C9 2 5 5.5 5 10C5 12.2 6.8 14 9 14C11.2 14 13 12.2 13 10C13 5.5 9 2 9 2Z" fill="white"/>
+          <path d="M6.5 14L5 17H7L8 15" fill="white" opacity="0.7"/>
+          <path d="M11.5 14L13 17H11L10 15" fill="white" opacity="0.7"/>
+          <circle cx="9" cy="10" r="1.5" fill="#1E3A5F"/>
+        </svg>
+      </div>
+      <div class="logo-mark">Rocket</div>
+    </div>
+    <div class="nav">
+      <button class="nav-item active" onclick="go('ideas',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/></svg>
+        アイデア一覧
+      </button>
+      <button class="nav-item" onclick="go('match',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="5.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.2"/><circle cx="10.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M1 13c0-2.2 2-4 4.5-4s4.5 1.8 4.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M10.5 9c2.2 0 4 1.8 4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        マッチング <span class="nav-badge">3</span>
+      </button>
+      <button class="nav-item" onclick="go('chat',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 3.5A1.5 1.5 0 0 1 3.5 2h9A1.5 1.5 0 0 1 14 3.5v6A1.5 1.5 0 0 1 12.5 11H9l-3 3v-3H3.5A1.5 1.5 0 0 1 2 9.5v-6Z" stroke="currentColor" stroke-width="1.2"/></svg>
+        チャット <span class="nav-badge">2</span>
+      </button>
+      <button class="nav-item" onclick="go('post',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        アイデア掲載
+      </button>
+      <button class="nav-item" onclick="go('profile',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        プロフィール
+      </button>
+    </div>
+    <div class="sidebar-profile user-menu-wrap" onclick="toggleUserMenu()" id="sidebarProfileArea">
+      <div class="av" style="width:30px;height:30px;font-size:11px;background:#EEF2FA;color:#2B4C8C;" id="sidebarAv">田</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="sidebarName">田中 健太</div>
+        <div style="font-size:11px;color:var(--text2);">起業家</div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;color:var(--text2);"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/></svg>
+      <div class="user-menu" id="userMenu">
+        <div class="user-menu-item" onclick="event.stopPropagation();go('profile',null)">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="4.5" r="2.5" stroke="currentColor" stroke-width="1.1"/><path d="M1.5 12c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+          プロフィール
+        </div>
+        <div class="user-menu-divider"></div>
+        <div class="user-menu-item danger" onclick="event.stopPropagation();doLogout()">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><path d="M9 10l3-3-3-3M12 7H5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          ログアウト
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Mobile topbar -->
+    <div class="mobile-topbar" style="position:relative;">
+      <div class="mobile-logo">
+        <div class="mobile-logo-icon">
+          <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+            <path d="M9 2C9 2 5 5.5 5 10C5 12.2 6.8 14 9 14C11.2 14 13 12.2 13 10C13 5.5 9 2 9 2Z" fill="white"/>
+            <path d="M6.5 14L5 17H7L8 15" fill="white" opacity="0.7"/>
+            <path d="M11.5 14L13 17H11L10 15" fill="white" opacity="0.7"/>
+            <circle cx="9" cy="10" r="1.5" fill="#1E3A5F"/>
+          </svg>
+        </div>
+        <span class="mobile-logo-text">Rocket</span>
+      </div>
+      <div style="position:relative;">
+        <div class="av" id="mobileUserAv" style="width:30px;height:30px;font-size:11px;background:#EEF2FA;color:#2B4C8C;cursor:pointer;" onclick="toggleMobileMenu()">田</div>
+        <div id="mobileUserMenu" style="display:none;position:absolute;top:calc(100%+8px);right:0;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:100;min-width:140px;">
+          <div class="user-menu-item" onclick="go('profile',null);document.getElementById('mobileUserMenu').style.display='none'">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="4.5" r="2.5" stroke="currentColor" stroke-width="1.1"/><path d="M1.5 12c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+            プロフィール
+          </div>
+          <div class="user-menu-divider"></div>
+          <div class="user-menu-item danger" onclick="doLogout();document.getElementById('mobileUserMenu').style.display='none'">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><path d="M9 10l3-3-3-3M12 7H5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            ログアウト
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IDEAS -->
+    <div id="p-ideas" class="tab-panel active" style="flex-direction:column;">
+      <div class="topbar"><span class="topbar-title">アイデア一覧</span><button class="btn btn-primary" onclick="go('post',null)">＋ 掲載する</button></div>
+      <div class="content">
+        <div class="search-bar">
+          <div class="search-input-wrap">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2"/><path d="M10 10l2.5 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            <input class="search-input" id="ideaSearch" type="text" placeholder="キーワードで検索…" oninput="filterIdeas()"/>
+          </div>
+          <button class="filter-btn" id="filterToggleBtn" onclick="toggleFilter()">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3h12M3 7h8M5 11h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            絞り込み<span id="filterCount" style="display:none;background:var(--accent);color:white;font-size:10px;padding:1px 5px;border-radius:8px;margin-left:2px;"></span>
+          </button>
+        </div>
+        <div class="filter-panel" id="filterPanel">
+          <div class="filter-grid">
+            <div>
+              <div class="filter-label">業界</div>
+              <div class="filter-sel-wrap">
+                <select class="filter-sel" id="f-industry" onchange="filterIdeas()">
+                  <option value="">すべて</option>
+                  <option>IT・ソフトウェア</option><option>AI・データサイエンス</option><option>フィンテック・金融</option><option>ヘルスケア・医療</option><option>教育・EdTech</option><option>フードテック・農業</option><option>EC・小売</option><option>HR・採用</option><option>エンタメ・メディア</option><option>その他</option>
+                </select>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div>
+              <div class="filter-label">報酬</div>
+              <div class="filter-sel-wrap">
+                <select class="filter-sel" id="f-reward" onchange="filterIdeas()">
+                  <option value="">すべて</option><option>報酬あり</option><option>応相談</option><option>株式分配あり</option>
+                </select>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div>
+              <div class="filter-label">場所</div>
+              <div class="filter-sel-wrap">
+                <select class="filter-sel" id="f-location" onchange="filterIdeas()">
+                  <option value="">すべて</option><option>フルリモート</option><option>対面希望</option><option>応相談</option>
+                </select>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div>
+              <div class="filter-label">スペシャリティ</div>
+              <div class="filter-chips" id="specFilterChips"></div>
+            </div>
+          </div>
+          <div style="grid-column:1/-1;">
+            <div class="filter-label">その他の条件</div>
+            <div class="filter-chips" id="fc-othercond">
+              <div class="fchip" onclick="this.classList.toggle('active');filterIdeas()">夜間のみでもOK</div>
+              <div class="fchip" onclick="this.classList.toggle('active');filterIdeas()">週末のみでもOK</div>
+              <div class="fchip" onclick="this.classList.toggle('active');filterIdeas()">隙間時間でOK</div>
+              <div class="fchip" onclick="this.classList.toggle('active');filterIdeas()">初心者歓迎</div>
+              <div class="fchip" onclick="this.classList.toggle('active');filterIdeas()">経験者優遇</div>
+            </div>
+          </div>
+          <div class="filter-footer">
+            <span style="font-size:12px;color:var(--text2);" id="filterResultLabel"></span>
+            <button class="btn" style="font-size:12px;padding:5px 12px;" onclick="resetFilters()">リセット</button>
+          </div>
+        </div>
+        <div class="active-filter-tags" id="activeFilterTags"></div>
+        <div class="result-count" id="resultCount"></div>
+        <div id="ideaList"></div>
+      </div>
+    </div>
+
+    <!-- MATCH -->
+    <div id="p-match" class="tab-panel" style="flex-direction:column;">
+      <div class="topbar"><span class="topbar-title">起業仲間候補</span><button class="btn" onclick="openMatchFilter()" style="display:flex;align-items:center;gap:5px;"><svg width='14' height='14' viewBox='0 0 14 14' fill='none'><path d='M1 3h12M3 7h8M5 11h4' stroke='currentColor' stroke-width='1.2' stroke-linecap='round'/></svg>絞り込み</button></div>
+      <div class="content">
+        <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:14px;" id="matchCount">起業仲間候補：3人</div>
+        <div class="match-grid">
+          <div class="match-card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div class="av" style="width:42px;height:42px;font-size:15px;background:#EEF2FA;color:#2B4C8C;">中</div><div><div style="font-size:14px;font-weight:500;">中村 誠</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">30代前半 · 男性 · 東京</div></div></div><div style="font-size:12px;color:var(--text2);margin-bottom:8px;">元ベンチャーCTO</div><div class="skill-row"><span class="skill-tag">React</span><span class="skill-tag">Python</span><span class="skill-tag">AI/ML</span></div><div style="display:flex;gap:6px;"><button class="btn-sm" style="flex:1;">スキップ</button><button class="btn-sm btn-primary" style="flex:1;padding:5px 0;font-size:12px;border-radius:var(--radius);cursor:pointer;">つながる</button></div></div>
+          <div class="match-card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div class="av" style="width:42px;height:42px;font-size:15px;background:#FEF3C7;color:#92400E;">伊</div><div><div style="font-size:14px;font-weight:500;">伊藤 あゆみ</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">20代後半 · 女性 · 大阪</div></div></div><div style="font-size:12px;color:var(--text2);margin-bottom:8px;">プロダクトデザイナー</div><div class="skill-row"><span class="skill-tag">Figma</span><span class="skill-tag">UXリサーチ</span></div><div style="display:flex;gap:6px;"><button class="btn-sm" style="flex:1;">スキップ</button><button class="btn-sm btn-primary" style="flex:1;padding:5px 0;font-size:12px;border-radius:var(--radius);cursor:pointer;">つながる</button></div></div>
+          <div class="match-card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div class="av" style="width:42px;height:42px;font-size:15px;background:#D1FAE5;color:#065F46;">小</div><div><div style="font-size:14px;font-weight:500;">小林 隆</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">40代前半 · 男性 · 東京</div></div></div><div style="font-size:12px;color:var(--text2);margin-bottom:8px;">エンジェル投資家</div><div class="skill-row"><span class="skill-tag">資金調達</span><span class="skill-tag">事業戦略</span></div><div style="display:flex;gap:6px;"><button class="btn-sm" style="flex:1;">スキップ</button><button class="btn-sm btn-primary" style="flex:1;padding:5px 0;font-size:12px;border-radius:var(--radius);cursor:pointer;">つながる</button></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div id="p-chat" class="tab-panel">
+      <div class="chat-layout">
+        <div class="chat-list-pane" id="chatListPane">
+          <div class="chat-list-hd">
+            <div class="chat-list-title">チャット</div>
+            <div class="chat-search-wrap">
+              <svg class="search-ico" width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1.1"/><path d="M8 8l2.5 2.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+              <input class="chat-search" placeholder="検索…"/>
+            </div>
+          </div>
+          <div class="thread-list">
+            <div class="thread active" onclick="openChat(this)">
+              <div class="av-wrap"><div class="av" style="width:36px;height:36px;font-size:13px;background:#EEF2FA;color:#2B4C8C;">中</div><div class="status-dot" style="background:#22C55E;"></div></div>
+              <div class="thread-body"><div style="display:flex;justify-content:space-between;align-items:center;"><span class="thread-name">中村 誠</span><span style="font-size:10px;color:var(--text2);">14:32</span></div><div class="thread-preview">今週末はご都合いかがですか？</div><div class="thread-login recent"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><circle cx="4.5" cy="4.5" r="3.5" stroke="currentColor" stroke-width="1"/><path d="M4.5 2.5v2l1.2 1.2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>たった今</div></div>
+            </div>
+            <div class="thread" onclick="openChat(this)">
+              <div class="av-wrap"><div class="av" style="width:36px;height:36px;font-size:13px;background:#FEF3C7;color:#92400E;">伊</div><div class="status-dot" style="background:#D1D5DB;"></div></div>
+              <div class="thread-body"><div style="display:flex;justify-content:space-between;align-items:center;"><span class="thread-name">伊藤 あゆみ</span><span style="font-size:10px;color:var(--text2);">昨日</span></div><div class="thread-preview">デザインの方向性について…</div><div class="thread-login mid"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><circle cx="4.5" cy="4.5" r="3.5" stroke="currentColor" stroke-width="1"/><path d="M4.5 2.5v2l1.2 1.2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>3時間前</div></div>
+              <div class="unread-badge">2</div>
+            </div>
+            <div class="thread" onclick="openChat(this)">
+              <div class="av-wrap"><div class="av" style="width:36px;height:36px;font-size:13px;background:#D1FAE5;color:#065F46;">山</div><div class="status-dot" style="background:#D1D5DB;"></div></div>
+              <div class="thread-body"><div style="display:flex;justify-content:space-between;align-items:center;"><span class="thread-name">山本 由紀</span><span style="font-size:10px;color:var(--text2);">月曜</span></div><div class="thread-preview">応募ありがとうございました！</div><div class="thread-login"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><circle cx="4.5" cy="4.5" r="3.5" stroke="currentColor" stroke-width="1"/><path d="M4.5 2.5v2l1.2 1.2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>2日前</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="chat-main" id="chatMainPane">
+          <div class="chat-hd">
+            <button class="chat-back" onclick="backToList()">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="av-wrap"><div class="av" style="width:34px;height:34px;font-size:12px;background:#EEF2FA;color:#2B4C8C;">中</div><div class="status-dot" style="background:#22C55E;"></div></div>
+            <div><div class="chat-hd-name">中村 誠</div><div class="chat-hd-sub">オンライン · 最終ログイン：たった今</div></div>
+          </div>
+          <div class="messages" id="chatMsgs">
+            <div class="ctx-card" onclick="openIdeaDetailFromChat('AIを活用した採用面接コーチングサービス')" style="cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+              <div class="ctx-icon">🧠</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:10px;color:var(--text2);margin-bottom:2px;">応募のあったアイデア</div>
+                <div style="font-size:12px;font-weight:500;">AIを活用した採用面接コーチングサービス</div>
+              </div>
+              <div class="ctx-tag">詳細 ›</div>
+            </div>
+            <div class="date-div"><span class="date-lbl">今日</span></div>
+            <div class="msg"><div class="av" style="width:28px;height:28px;font-size:11px;background:#EEF2FA;color:#2B4C8C;flex-shrink:0;">中</div><div><div class="bubble bubble-other">はじめまして！プロフィール拝見しました。面白いアイデアですね。</div><div class="msg-time" style="margin-top:3px;margin-left:4px;">14:20</div></div></div>
+            <div class="msg mine"><div><div class="bubble bubble-mine">ありがとうございます！ぜひお話しできれば。</div><div class="msg-time" style="margin-top:3px;text-align:right;margin-right:4px;">14:24 <span class="check-icon">✓✓</span></div></div></div>
+            <div class="msg"><div class="av" style="width:28px;height:28px;font-size:11px;background:#EEF2FA;color:#2B4C8C;flex-shrink:0;">中</div><div><div class="bubble bubble-other">今週末はご都合いかがですか？</div><div class="msg-time" style="margin-top:3px;margin-left:4px;">14:32</div></div></div>
+          </div>
+          <div class="chat-input-wrap">
+            <div class="input-row">
+              <input class="chat-input" placeholder="メッセージを入力…" id="chatIn"/>
+              <button class="send-btn" onclick="sendMsg()"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M7 1l6 6-6 6" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            </div>
+            <div style="display:flex;gap:3px;">
+              <button class="ia-btn"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1"/><circle cx="4" cy="4" r="1" fill="currentColor"/><path d="M1 9l3-3 2 2 2-2 3 3" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              <button class="ia-btn"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8 1H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5L8 1Z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/><path d="M8 1v4h4" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg></button>
+              <button class="ia-btn"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1"/><path d="M4.5 8.5s.7 1.5 2.5 1.5 2.5-1.5 2.5-1.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/><circle cx="5" cy="5.5" r=".8" fill="currentColor"/><circle cx="9" cy="5.5" r=".8" fill="currentColor"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POST -->
+    <div id="p-post" class="tab-panel" style="flex-direction:column;">
+      <div class="topbar"><span class="topbar-title">アイデアを掲載する</span></div>
+      <div class="content">
+        <div class="form-section">
+          <div class="sec-head">基本情報</div>
+          <div class="field"><div class="label">タイトル <span class="req">必須</span></div><input class="f-input" type="text" placeholder="例：AIを使った○○サービスの共同創業者を探しています" id="f-title" oninput="document.getElementById('tc').textContent=this.value.length" maxlength="50"/><div class="char-count"><span id="tc">0</span> / 50</div></div>
+          <div class="field"><div class="label">概要 <span class="req">必須</span></div><textarea class="f-textarea" placeholder="事業のアイデア・課題感・目指す世界観などを自由に書いてください。" id="f-desc" oninput="document.getElementById('dc').textContent=this.value.length" maxlength="2000"></textarea><div class="char-count"><span id="dc">0</span> / 2,000</div></div>
+          <div class="field"><div class="label">業界 <span class="req">必須</span></div><div class="sel-wrap"><select><option value="" disabled selected>業界を選択してください</option><option>IT・ソフトウェア</option><option>AI・データサイエンス</option><option>フィンテック・金融</option><option>ヘルスケア・医療</option><option>教育・EdTech</option><option>フードテック・農業</option><option>EC・小売</option><option>不動産・建設</option><option>エネルギー・環境</option><option>HR・採用</option><option>エンタメ・メディア</option><option>その他</option></select><svg class="sel-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2.5 4.5l4 4 4-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+          <div class="field" style="margin-bottom:0;"><div class="label">参考URL <span class="opt">任意</span></div><div class="url-wrap"><span class="url-pfx">https://</span><input class="url-input" type="text" placeholder="example.com"/></div><div class="hint">ノート・資料など事業をより伝えられるURL</div></div>
+        </div>
+        <div class="form-section">
+          <div class="sec-head">募集スペシャリティ</div>
+          <div class="hint" style="margin-bottom:10px;">複数選択できます</div>
+          <div class="spec-grid" id="sGrid"></div>
+          <div id="sTags" class="sel-tags"></div>
+        </div>
+        <div class="two-col">
+          <div class="form-section" style="margin-bottom:0;"><div class="sec-head">報酬</div><div class="radio-group" id="rGrp"><div class="radio-item" onclick="selR('reward','報酬あり')"><div class="radio-circle"><div class="radio-dot"></div></div>報酬あり</div><div class="radio-item" onclick="selR('reward','応相談')"><div class="radio-circle"><div class="radio-dot"></div></div>応相談</div><div class="radio-item" onclick="selR('reward','株式分配あり')"><div class="radio-circle"><div class="radio-dot"></div></div>株式分配あり</div></div></div>
+          <div class="form-section" style="margin-bottom:0;"><div class="sec-head">場所</div><div class="radio-group" id="pGrp"><div class="radio-item" onclick="selR('place','フルリモート')"><div class="radio-circle"><div class="radio-dot"></div></div>フルリモート</div><div class="radio-item" onclick="selR('place','対面希望')"><div class="radio-circle"><div class="radio-dot"></div></div>対面希望</div><div class="radio-item" onclick="selR('place','応相談')"><div class="radio-circle"><div class="radio-dot"></div></div>応相談</div></div></div>
+        </div>
+
+        <div class="form-section" style="margin-top:0;">
+          <div class="sec-head">その他の条件 <span style="font-size:10px;font-weight:400;color:var(--text2);text-transform:none;letter-spacing:0;">（複数選択可）</span></div>
+          <div class="hint" style="margin-bottom:12px;">参加ハードルについて当てはまるものを選んでください</div>
+          <div id="otherCondGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;"></div>
+          <div id="otherCondTags" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;"></div>
+        </div>
+        <div class="form-actions"><button class="btn">下書き保存</button><button class="btn btn-primary">掲載する</button></div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="p-profile" class="tab-panel" style="flex-direction:column;">
+      <div class="topbar"><span class="topbar-title">プロフィール</span><button class="btn" onclick="go('edit',null)">編集する</button></div>
+      <div class="content">
+        <div class="p-hero">
+          <div class="hero-cover"></div>
+          <div class="hero-body">
+            <div class="av-row"><div class="av-large" style="background:#EEF2FA;color:#2B4C8C;">田</div><div style="display:flex;gap:8px;"><button style="display:flex;align-items:center;gap:5px;padding:8px 14px;border-radius:var(--radius);border:0.5px solid var(--accent);background:var(--accent-bg);color:var(--accent);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;"><svg width='13' height='13' viewBox='0 0 13 13' fill='none'><path d='M2 3A1.5 1.5 0 0 1 3.5 1.5h6A1.5 1.5 0 0 1 11 3v5A1.5 1.5 0 0 1 9.5 9.5H7L4.5 12v-2.5H3.5A1.5 1.5 0 0 1 2 8V3Z' stroke='currentColor' stroke-width='1.1'/></svg>メッセージ</button><button style="display:flex;align-items:center;gap:5px;padding:8px 14px;border-radius:var(--radius);border:none;background:#1E3A5F;color:white;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;"><svg width='13' height='13' viewBox='0 0 13 13' fill='none'><path d='M6.5 1v11M1 6.5h11' stroke='white' stroke-width='1.4' stroke-linecap='round'/></svg>つながる</button></div></div>
+            <div class="p-name-row"><span class="p-name">田中 健太</span><span class="role-badge">起業家</span></div>
+            <div class="p-sub">東京 · 30代前半 · 男性 · SaaSスタートアップ構想中 · 最終ログイン：たった今</div>
+            <div class="p-bio">「採用をもっと本質的な出会いにしたい」という課題感から、面接コーチングサービスを構想中。エンジニア出身ですが、プロダクトと事業の両面を一緒に考えられる仲間を探しています。</div>
+            <div class="tags"><span class="tag">BtoB SaaS</span><span class="tag">HR Tech</span><span class="tag-gray">東京</span><span class="tag-gray">リモート可</span></div>
+            <div class="stats-row"><div><div class="stat-num">128</div><div class="stat-lbl">閲覧数</div></div><div><div class="stat-num">12</div><div class="stat-lbl">つながり</div></div><div><div class="stat-num">3</div><div class="stat-lbl">掲載数</div></div><div><div class="stat-num">8</div><div class="stat-lbl">応募受信</div></div></div>
+          </div>
+        </div>
+        <div class="card"><div class="section-heading">スペシャリティ</div><div><span class="spec-chip"><span class="chip-dot"></span>エンジニア</span><span class="spec-chip"><span class="chip-dot"></span>プロダクトマネージャー</span><span class="spec-chip"><span class="chip-dot"></span>ビジネスディベロッパー</span></div></div>
+        <div class="card"><div class="section-heading">経歴</div>
+          <div class="career-item"><div class="dot-col"><div class="cdot"></div><div class="cline"></div></div><div><div class="career-role">テックリード</div><div class="career-co">株式会社メドレー</div><div class="career-period">2019年 〜 2024年</div></div></div>
+          <div class="career-item"><div class="dot-col"><div class="cdot"></div><div class="cline"></div></div><div><div class="career-role">Webエンジニア</div><div class="career-co">ヤフー株式会社</div><div class="career-period">2016年 〜 2019年</div></div></div>
+          <div class="career-item"><div class="dot-col"><div class="cdot"></div></div><div><div class="career-role">情報工学部 卒業</div><div class="career-co">東京工業大学</div><div class="career-period">2012年 〜 2016年</div></div></div>
+        </div>
+        <div class="card" style="margin-bottom:0;"><div class="section-heading">掲載中のアイデア</div><div style="display:flex;gap:11px;align-items:flex-start;"><div style="width:36px;height:36px;border-radius:var(--radius);background:#EEF2FA;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🧠</div><div><div style="font-size:13px;font-weight:500;margin-bottom:3px;">AIを活用した採用面接コーチングサービス</div><div style="font-size:12px;color:var(--text2);">EdTech · AI · エンジニア募集</div></div></div></div>
+      </div>
+    </div>
+
+
+    <!-- PROFILE EDIT -->
+    <div id="p-edit" class="tab-panel" style="flex-direction:column;">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button onclick="go('profile',null)" style="border:none;background:none;cursor:pointer;color:var(--accent);display:flex;align-items:center;gap:4px;font-size:13px;font-family:inherit;padding:0;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3l-5 5 5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            戻る
+          </button>
+          <span class="topbar-title">プロフィール編集</span>
+        </div>
+        <button class="btn btn-primary" onclick="saveProfile()">保存する</button>
+      </div>
+      <div class="content">
+
+        <!-- アイコン -->
+        <div class="form-section">
+          <div class="sec-head">プロフィール画像</div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="position:relative;">
+              <div id="editAvatarPreview" style="width:72px;height:72px;border-radius:50%;background:#EEF2FA;color:#2B4C8C;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:500;overflow:hidden;border:2px solid var(--border);">田</div>
+              <label for="avatarInput" style="position:absolute;bottom:0;right:0;width:24px;height:24px;background:var(--accent-dark);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid var(--bg);">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 9.5V11h1.5l4.5-4.5L5.5 5 1 9.5ZM10.5 2.5a1 1 0 0 0 0-1.4L9.4.9a1 1 0 0 0-1.4 0L7 2l2 2 1.5-1.5Z" fill="white"/></svg>
+                <input type="file" id="avatarInput" accept="image/*" style="display:none;" onchange="previewAvatar(this)"/>
+              </label>
+            </div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6;">JPG・PNG・GIF<br>推奨サイズ：400×400px以上</div>
+          </div>
+        </div>
+
+        <!-- 基本情報 -->
+        <div class="form-section">
+          <div class="sec-head">基本情報</div>
+          <div class="field">
+            <div class="label">お名前 <span class="req">必須</span></div>
+            <input class="f-input" type="text" value="田中 健太" id="edit-name"/>
+          </div>
+          <div class="field">
+            <div class="label">年齢 <span class="req">必須</span></div>
+            <div class="sel-wrap">
+              <select class="f-input" id="edit-age" style="appearance:none;padding-right:32px;">
+                <option value="">選択してください</option>
+                <option>10代</option><option>20代前半</option><option>20代後半</option>
+                <option selected>30代前半</option><option>30代後半</option>
+                <option>40代前半</option><option>40代後半</option>
+                <option>50代前半</option><option>50代後半</option>
+                <option>60代前半</option><option>60代後半</option><option>70代以上</option>
+              </select>
+              <svg class="sel-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2.5 4.5l4 4 4-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+          <div class="field">
+            <div class="label">性別 <span class="req">必須</span></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:var(--radius);border:0.5px solid var(--border);cursor:pointer;font-size:13px;" id="gender-male">
+                <input type="radio" name="gender" value="男性" checked style="accent-color:var(--accent);"/> 男性
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:var(--radius);border:0.5px solid var(--border);cursor:pointer;font-size:13px;" id="gender-female">
+                <input type="radio" name="gender" value="女性" style="accent-color:var(--accent);"/> 女性
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:var(--radius);border:0.5px solid var(--border);cursor:pointer;font-size:13px;">
+                <input type="radio" name="gender" value="未回答" style="accent-color:var(--accent);"/> 未回答
+              </label>
+            </div>
+          </div>
+          <div class="field">
+            <div class="label">居住地</div>
+            <input class="f-input" type="text" value="東京都" id="edit-location"/>
+          </div>
+          <div class="field">
+            <div class="label">起業フェーズ</div>
+            <div class="sel-wrap">
+              <select class="f-input" style="appearance:none;padding-right:32px;">
+                <option>構想・検証中</option><option>プロダクト開発中</option><option>PMF模索中</option><option>グロース中</option>
+              </select>
+              <svg class="sel-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2.5 4.5l4 4 4-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <div class="label">自己紹介</div>
+            <textarea class="f-textarea" style="min-height:110px;" id="edit-bio">「採用をもっと本質的な出会いにしたい」という課題感から、面接コーチングサービスを構想中。エンジニア出身ですが、プロダクトと事業の両面を一緒に考えられる仲間を探しています。</textarea>
+          </div>
+        </div>
+
+        <!-- スペシャリティ -->
+        <div class="form-section">
+          <div class="sec-head">スペシャリティ</div>
+          <div class="spec-grid" id="editSpecGrid"></div>
+        </div>
+
+        <!-- 経歴 -->
+        <div class="form-section">
+          <div class="sec-head">経歴</div>
+          <div id="editCareerList">
+            <div class="career-edit-item" style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">
+              <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <input class="f-input" placeholder="役職・役割" value="テックリード"/>
+                <input class="f-input" placeholder="会社・学校名" value="株式会社メドレー"/>
+                <input class="f-input" placeholder="開始年（例：2019年）" value="2019年"/>
+                <input class="f-input" placeholder="終了年（例：2024年）" value="2024年"/>
+              </div>
+              <button onclick="this.closest('.career-edit-item').remove()" style="border:none;background:none;cursor:pointer;color:var(--text2);padding:4px;margin-top:6px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <div class="career-edit-item" style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">
+              <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <input class="f-input" placeholder="役職・役割" value="Webエンジニア"/>
+                <input class="f-input" placeholder="会社・学校名" value="ヤフー株式会社"/>
+                <input class="f-input" placeholder="開始年（例：2016年）" value="2016年"/>
+                <input class="f-input" placeholder="終了年（例：2019年）" value="2019年"/>
+              </div>
+              <button onclick="this.closest('.career-edit-item').remove()" style="border:none;background:none;cursor:pointer;color:var(--text2);padding:4px;margin-top:6px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+          </div>
+          <button onclick="addCareerItem()" style="display:flex;align-items:center;gap:6px;border:0.5px dashed var(--border2);background:none;padding:10px 14px;border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--text2);width:100%;font-family:inherit;">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            経歴を追加
+          </button>
+        </div>
+
+        <div style="height:20px;"></div>
+      </div>
+    </div>
+
+    <!-- IDEA DETAIL -->
+    <div id="p-detail" class="tab-panel" style="flex-direction:column;">
+      <div class="topbar">
+        <button class="detail-back" onclick="detailGoBack()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3l-5 5 5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="detailBackLabel">アイデア一覧</span>
+        </button>
+        <button class="btn btn-primary" id="detailApplyBtn" onclick="openApplyFromDetail()">応募する</button>
+      </div>
+      <div class="content" id="detailContent">
+      </div>
+    </div>
+
+    <!-- FOUNDER PROFILE -->
+    <div id="p-founder" class="tab-panel" style="flex-direction:column;">
+      <div class="topbar">
+        <button class="detail-back" onclick="founderGoBack()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3l-5 5 5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="founderBackLabel">詳細に戻る</span>
+        </button>
+        <button class="btn btn-primary" onclick="contactFounder()" style="display:flex;align-items:center;gap:5px;">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3A1.5 1.5 0 0 1 3.5 1.5h6A1.5 1.5 0 0 1 11 3v5A1.5 1.5 0 0 1 9.5 9.5H7L4.5 12v-2.5H3.5A1.5 1.5 0 0 1 2 8.5V3Z" stroke="white" stroke-width="1.1"/></svg>
+          メッセージ
+        </button>
+      </div>
+      <div class="content" id="founderContent"></div>
+    </div>
+  </div><!-- /main -->
+
+  <!-- Mobile bottom nav -->
+  <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+      <button class="bn-item active" onclick="go('ideas',this)" id="bn-ideas">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/></svg>
+        アイデア
+      </button>
+      <button class="bn-item" onclick="go('match',this)" id="bn-match">
+        <div class="bn-badge">3</div>
+        <svg viewBox="0 0 16 16" fill="none"><circle cx="5.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><circle cx="10.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 13c0-2.2 2-4 4.5-4s4.5 1.8 4.5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M10.5 9c2.2 0 4 1.8 4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        マッチング
+      </button>
+      <button class="bn-item" onclick="go('chat',this)" id="bn-chat">
+        <div class="bn-badge">2</div>
+        <svg viewBox="0 0 16 16" fill="none"><path d="M2 3.5A1.5 1.5 0 0 1 3.5 2h9A1.5 1.5 0 0 1 14 3.5v6A1.5 1.5 0 0 1 12.5 11H9l-3 3v-3H3.5A1.5 1.5 0 0 1 2 9.5v-6Z" stroke="currentColor" stroke-width="1.3"/></svg>
+        チャット
+      </button>
+      <button class="bn-item" onclick="go('post',this)" id="bn-post">
+        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        掲載
+      </button>
+      <button class="bn-item" onclick="go('profile',this)" id="bn-profile">
+        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        プロフィール
+      </button>
+    </div>
+  </nav>
+
+</div><!-- /app -->
+
+<script>
+const SPEC_LIST = ['ビジネスディベロッパー','エンジニア','デザイナー','セールス','マーケター','プロダクトマネージャー','ライター','広報・PR','バックオフィス','スターター','その他'];
+const sel = new Set();
+const rs = {};
+const pageMap = { ideas:'bn-ideas', match:'bn-match', chat:'bn-chat', post:'bn-post', profile:'bn-profile', edit:'bn-profile' };
+
+const IDEAS = [
+  { icon:'🧠', iconBg:'#EEF2FA', title:'AIを活用した採用面接コーチングサービス', desc:'就活生・転職者向けに、AIが面接練習・フィードバックを提供。月額サブスクで展開。', industry:'教育・EdTech', tags:['EdTech','AI'], specs:['エンジニア','デザイナー'], reward:'応相談', location:'フルリモート', conditions:['週末のみでもOK','隙間時間でOK','初心者歓迎'], founderAv:'山', founderAvBg:'#FEF3C7', founderAvColor:'#92400E', founderName:'山本 由紀', phase:'構想段階' },
+  { icon:'🌱', iconBg:'#ECFDF5', title:'地方農家と都市部消費者を繋ぐ直販プラットフォーム', desc:'農家が自分のブランドを持てる直販ECを低コストで展開。産地・生産者が見える安心な食材。', industry:'フードテック・農業', tags:['フードテック','EC'], specs:['ビジネスディベロッパー','マーケター'], reward:'株式分配あり', location:'応相談', conditions:['夜間のみでもOK','経験者優遇'], founderAv:'佐', founderAvBg:'#D1FAE5', founderAvColor:'#065F46', founderName:'佐々木 大輔', phase:'検証中' },
+  { icon:'💊', iconBg:'#FEF3C7', title:'服薬管理・リマインドアプリ（高齢者向け）', desc:'家族と連携した服薬管理UIとリマインド通知を提供するB2Cアプリ。', industry:'ヘルスケア・医療', tags:['ヘルスケア'], specs:['エンジニア'], reward:'報酬あり', location:'フルリモート', conditions:['隙間時間でOK','初心者歓迎','週末のみでもOK'], founderAv:'鈴', founderAvBg:'#EDE9FE', founderAvColor:'#5B21B6', founderName:'鈴木 花菜', phase:'アイデア段階' },
+  { icon:'🏢', iconBg:'#FEF3C7', title:'中小企業向けクラウド会計SaaS', desc:'記帳・請求・給与をオールインワンで管理できる低価格SaaS。税理士連携機能付き。', industry:'フィンテック・金融', tags:['SaaS','フィンテック'], specs:['エンジニア','セールス','マーケター'], reward:'株式分配あり', location:'対面希望', founderAv:'田', founderAvBg:'#EEF2FA', founderAvColor:'#2B4C8C', founderName:'田辺 浩二', phase:'構想段階' },
+  { icon:'🎯', iconBg:'#FEF3C7', title:'副業マッチングから始める転職支援プラットフォーム', desc:'副業で実績を積みながら転職先を探せる。企業と個人のミスマッチを減らすHR Techサービス。', industry:'HR・採用', tags:['HR Tech','マッチング'], specs:['プロダクトマネージャー','マーケター','セールス'], reward:'報酬あり', location:'フルリモート', founderAv:'木', founderAvBg:'#D1FAE5', founderAvColor:'#065F46', founderName:'木村 さくら', phase:'検証中' },
+  { icon:'🎵', iconBg:'#EDE9FE', title:'インディーズアーティスト向けライブ配信・収益化アプリ', desc:'ライブ配信・グッズ販売・ファンコミュニティをワンストップで提供。音楽で食べていける環境をつくる。', industry:'エンタメ・メディア', tags:['エンタメ','SaaS'], specs:['エンジニア','デザイナー','広報・PR'], reward:'応相談', location:'フルリモート', founderAv:'中', founderAvBg:'#FEF3C7', founderAvColor:'#92400E', founderName:'中島 遥', phase:'アイデア段階' },
+];
+
+let selectedSpecs = new Set();
+let filterOpen = false;
+
+function go(id, el) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('p-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.bn-item').forEach(n => n.classList.remove('active'));
+  if (el && el.classList && el.classList.contains('nav-item')) el.classList.add('active');
+  const bnId = pageMap[id];
+  if (bnId) document.getElementById(bnId).classList.add('active');
+}
+
+function toggleFilter() {
+  filterOpen = !filterOpen;
+  document.getElementById('filterPanel').classList.toggle('open', filterOpen);
+}
+
+function resetFilters() {
+  document.getElementById('ideaSearch').value = '';
+  document.getElementById('f-industry').value = '';
+  document.getElementById('f-reward').value = '';
+  document.getElementById('f-location').value = '';
+  selectedSpecs.clear();
+  renderSpecFilterChips();
+  document.querySelectorAll('#fc-othercond .fchip').forEach(c => c.classList.remove('active'));
+  filterIdeas();
+}
+
+function filterIdeas() {
+  const q = document.getElementById('ideaSearch').value.toLowerCase();
+  const industry = document.getElementById('f-industry').value;
+  const reward = document.getElementById('f-reward').value;
+  const location = document.getElementById('f-location').value;
+
+  const filtered = IDEAS.filter(idea => {
+    if (q && !idea.title.toLowerCase().includes(q) && !idea.desc.toLowerCase().includes(q) && !idea.tags.join(' ').toLowerCase().includes(q)) return false;
+    if (industry && idea.industry !== industry) return false;
+    if (reward && idea.reward !== reward) return false;
+    if (location && idea.location !== location) return false;
+    if (selectedSpecs.size > 0) {
+      const hasSpec = [...selectedSpecs].some(s => idea.specs.includes(s));
+      if (!hasSpec) return false;
+    }
+    const activeOtherConds = [...document.querySelectorAll('#fc-othercond .fchip.active')].map(c => c.textContent);
+    if (activeOtherConds.length > 0) {
+      const ideaConds = idea.conditions || [];
+      const hasMatch = activeOtherConds.some(c => ideaConds.includes(c));
+      if (!hasMatch) return false;
+    }
+    return true;
+  });
+
+  renderIdeaCards(filtered);
+  updateFilterUI(filtered.length);
+}
+
+function renderIdeaCards(ideas) {
+  const list = document.getElementById('ideaList');
+  if (ideas.length === 0) {
+    list.innerHTML = `<div class="no-results"><div class="no-results-icon">🔍</div><div class="no-results-text">条件に合うアイデアが見つかりません</div><div class="no-results-sub">検索条件を変えてみてください</div></div>`;
+    return;
+  }
+  list.innerHTML = ideas.map(idea => `
+    <div class="card">
+      <div class="idea-header">
+        <div class="idea-icon" style="background:${idea.iconBg};">${idea.icon}</div>
+        <div><div class="idea-title">${idea.title}</div><div class="idea-desc">${idea.desc}</div></div>
+      </div>
+      <div class="tags">
+        ${idea.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+        ${idea.specs.map(s => `<span class="tag-gray">${s}募集</span>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px;margin:6px 0 8px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:3px;">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1"/><path d="M5.5 3v2.5l1.5 1.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+          ${idea.reward}
+        </span>
+        <span style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:3px;">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1.5C4 1.5 2.5 2.8 2.5 4.5c0 2.5 3 5.5 3 5.5s3-3 3-5.5c0-1.7-1.5-3-3-3Z" stroke="currentColor" stroke-width="1"/></svg>
+          ${idea.location}
+        </span>
+      </div>
+      ${idea.conditions && idea.conditions.length > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">${idea.conditions.map(c=>`<span style="font-size:10px;padding:2px 8px;border-radius:20px;background:#F0FDF4;color:#166534;border:0.5px solid #BBF7D0;">${c}</span>`).join('')}</div>` : ''}
+      <div class="idea-footer">
+        <div class="founder-info">
+          <div class="av" style="width:26px;height:26px;font-size:10px;background:${idea.founderAvBg};color:${idea.founderAvColor};">${idea.founderAv}</div>
+          ${idea.founderName} · ${idea.phase}
+        </div>
+        <div style="display:flex;gap:7px;">
+          <button class="btn-sm" onclick="openIdeaDetail(${JSON.stringify(idea).replace(/"/g,'&quot;')})">詳細</button>
+          <button class="btn-sm btn-primary" style="padding:5px 12px;font-size:12px;cursor:pointer;" onclick="openApply(${JSON.stringify(idea).replace(/"/g,'&quot;')})">応募する</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateFilterUI(count) {
+  const activeCount = (document.getElementById('f-industry').value ? 1 : 0)
+    + (document.getElementById('f-reward').value ? 1 : 0)
+    + (document.getElementById('f-location').value ? 1 : 0)
+    + (selectedSpecs.size > 0 ? 1 : 0)
+    + (document.getElementById('ideaSearch').value ? 1 : 0);
+
+  const countEl = document.getElementById('filterCount');
+  const btn = document.getElementById('filterToggleBtn');
+  if (activeCount > 0) {
+    countEl.style.display = 'inline';
+    countEl.textContent = activeCount;
+    btn.classList.add('has-filter');
+  } else {
+    countEl.style.display = 'none';
+    btn.classList.remove('has-filter');
+  }
+
+  document.getElementById('resultCount').textContent = `${count}件のアイデア`;
+  document.getElementById('filterResultLabel').textContent = `${count}件 / ${IDEAS.length}件`;
+
+  renderActiveFilterTags();
+}
+
+function renderActiveFilterTags() {
+  const container = document.getElementById('activeFilterTags');
+  const tags = [];
+  const q = document.getElementById('ideaSearch').value;
+  if (q) tags.push({ label: `"${q}"`, clear: () => { document.getElementById('ideaSearch').value = ''; filterIdeas(); } });
+  const ind = document.getElementById('f-industry').value;
+  if (ind) tags.push({ label: ind, clear: () => { document.getElementById('f-industry').value = ''; filterIdeas(); } });
+  const rew = document.getElementById('f-reward').value;
+  if (rew) tags.push({ label: rew, clear: () => { document.getElementById('f-reward').value = ''; filterIdeas(); } });
+  const loc = document.getElementById('f-location').value;
+  if (loc) tags.push({ label: loc, clear: () => { document.getElementById('f-location').value = ''; filterIdeas(); } });
+  selectedSpecs.forEach(s => tags.push({ label: s, clear: () => { selectedSpecs.delete(s); renderSpecFilterChips(); filterIdeas(); } }));
+
+  container.innerHTML = '';
+  tags.forEach((t, i) => {
+    const el = document.createElement('div');
+    el.className = 'active-ftag';
+    el.innerHTML = `${t.label}<span class="active-ftag-x" data-i="${i}">×</span>`;
+    el.querySelector('.active-ftag-x').addEventListener('click', t.clear);
+    container.appendChild(el);
+  });
+}
+
+function renderSpecFilterChips() {
+  const container = document.getElementById('specFilterChips');
+  if (!container) return;
+  container.innerHTML = '';
+  SPEC_LIST.forEach(s => {
+    const chip = document.createElement('div');
+    chip.className = 'fchip' + (selectedSpecs.has(s) ? ' active' : '');
+    chip.textContent = s;
+    chip.onclick = () => {
+      selectedSpecs.has(s) ? selectedSpecs.delete(s) : selectedSpecs.add(s);
+      renderSpecFilterChips();
+      filterIdeas();
+    };
+    container.appendChild(chip);
+  });
+}
+
+function openChat(threadEl) {
+  document.querySelectorAll('.thread').forEach(t => t.classList.remove('active'));
+  threadEl.classList.add('active');
+  if (window.innerWidth <= 640) {
+    document.getElementById('chatListPane').classList.add('hidden');
+    document.getElementById('chatMainPane').classList.remove('hidden');
+  }
+}
+
+function backToList() {
+  document.getElementById('chatListPane').classList.remove('hidden');
+  document.getElementById('chatMainPane').classList.add('hidden');
+}
+
+const OTHER_CONDS = ['夜間のみの参加でもOK','週末のみの参加でもOK','隙間時間でOK','初心者歓迎','経験者優遇'];
+const selectedOtherConds = new Set();
+
+function renderOtherCondGrid() {
+  const g = document.getElementById('otherCondGrid');
+  if (!g) return;
+  g.innerHTML = '';
+  OTHER_CONDS.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'spec-item' + (selectedOtherConds.has(s) ? ' checked' : '');
+    d.innerHTML = `<div class="spec-cb"><svg class="spec-ck" width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5L3.5 6.5L7.5 2.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>${s}`;
+    d.onclick = () => { selectedOtherConds.has(s) ? selectedOtherConds.delete(s) : selectedOtherConds.add(s); renderOtherCondGrid(); };
+    g.appendChild(d);
+  });
+  const t = document.getElementById('otherCondTags');
+  if (t) { t.innerHTML = ''; selectedOtherConds.forEach(s => { const x = document.createElement('div'); x.className = 'sel-tag'; x.innerHTML = `${s}<span class="sel-tag-x" onclick="selectedOtherConds.delete('${s}');renderOtherCondGrid()">×</span>`; t.appendChild(x); }); }
+}
+
+function renderSpec() {
+  const g = document.getElementById('sGrid');
+  if (!g) return;
+  g.innerHTML = '';
+  SPEC_LIST.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'spec-item' + (sel.has(s) ? ' checked' : '');
+    d.innerHTML = `<div class="spec-cb"><svg class="spec-ck" width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5L3.5 6.5L7.5 2.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>${s}`;
+    d.onclick = () => { sel.has(s) ? sel.delete(s) : sel.add(s); renderSpec(); };
+    g.appendChild(d);
+  });
+  const t = document.getElementById('sTags');
+  if (t) { t.innerHTML = ''; sel.forEach(s => { const x = document.createElement('div'); x.className = 'sel-tag'; x.innerHTML = `${s}<span class="sel-tag-x" onclick="sel.delete('${s}');renderSpec()">×</span>`; t.appendChild(x); }); }
+}
+
+function selR(group, val) {
+  rs[group] = val;
+  const gid = group === 'reward' ? 'rGrp' : 'pGrp';
+  document.querySelectorAll(`#${gid} .radio-item`).forEach(el => el.classList.toggle('selected', el.textContent.trim() === val));
+}
+
+function sendMsg() {
+  const inp = document.getElementById('chatIn');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  const msgs = document.getElementById('chatMsgs');
+  const d = document.createElement('div');
+  d.className = 'msg mine';
+  const now = new Date();
+  d.innerHTML = `<div><div class="bubble bubble-mine">${txt}</div><div class="msg-time" style="margin-top:3px;text-align:right;margin-right:4px;">${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}</div></div>`;
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+  inp.value = '';
+}
+
+function initChat() {
+  if (window.innerWidth <= 640) {
+    document.getElementById('chatMainPane').classList.add('hidden');
+  }
+}
+
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 640) {
+    document.getElementById('chatListPane').classList.remove('hidden');
+    document.getElementById('chatMainPane').classList.remove('hidden');
+  }
+});
+
+// ===== AUTH =====
+const DEMO_USER = { email: 'demo@rocket.com', password: 'demo1234', name: '田中 健太', av: '田' };
+let currentUser = null;
+
+function showLogin() {
+  document.getElementById('loginForm').style.display = 'block';
+  document.getElementById('signupForm').style.display = 'none';
+  document.getElementById('loginError').classList.remove('show');
+}
+function showSignup() {
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('signupForm').style.display = 'block';
+  document.getElementById('signupError').classList.remove('show');
+}
+
+function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  if (!email || !pass) { errEl.textContent = 'メールアドレスとパスワードを入力してください'; errEl.classList.add('show'); return; }
+  if (email === DEMO_USER.email && pass === DEMO_USER.password) {
+    loginSuccess(DEMO_USER);
+  } else {
+    errEl.textContent = 'メールアドレスまたはパスワードが正しくありません';
+    errEl.classList.add('show');
+    document.getElementById('loginPassword').value = '';
+  }
+}
+
+function doSignup() {
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const pass = document.getElementById('signupPassword').value;
+  const errEl = document.getElementById('signupError');
+  if (!name || !email || !pass) { errEl.textContent = 'すべての項目を入力してください'; errEl.classList.add('show'); return; }
+  if (pass.length < 8) { errEl.textContent = 'パスワードは8文字以上で設定してください'; errEl.classList.add('show'); return; }
+  loginSuccess({ name, email, av: name.charAt(0) });
+}
+
+function doSocialLogin() {
+  loginSuccess(DEMO_USER);
+}
+
+function loginSuccess(user) {
+  currentUser = user;
+  document.getElementById('authOverlay').style.display = 'none';
+  document.getElementById('sidebarName').textContent = user.name;
+  document.getElementById('sidebarAv').textContent = user.av;
+  document.getElementById('mobileUserAv').textContent = user.av;
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('userMenu').classList.remove('open');
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginError').classList.remove('show');
+  showLogin();
+  document.getElementById('authOverlay').style.display = 'flex';
+}
+
+function toggleMobileMenu() {
+  const m = document.getElementById('mobileUserMenu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+function toggleUserMenu() {
+  document.getElementById('userMenu').classList.toggle('open');
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#sidebarProfileArea')) {
+    document.getElementById('userMenu').classList.remove('open');
+  }
+});
+
+
+// ===== TERMS CHECK =====
+function checkTerms() {
+  const ok = document.getElementById('agreeTerms').checked && document.getElementById('agreePrivacy').checked;
+  const btn = document.getElementById('signupSubmitBtn');
+  btn.style.opacity = ok ? '1' : '0.4';
+  btn.style.pointerEvents = ok ? 'auto' : 'none';
+}
+
+// ===== MATCH FILTER POPUP =====
+function openMatchFilter() { document.getElementById('matchFilterOverlay').classList.add('open'); }
+function closeMatchFilter() { document.getElementById('matchFilterOverlay').classList.remove('open'); }
+function togglePchip(el) { el.classList.toggle('active'); }
+function resetMatchFilter() {
+  document.querySelectorAll('#matchFilterOverlay .pchip').forEach(c => c.classList.remove('active'));
+}
+function applyMatchFilter() {
+  const activeChips = [...document.querySelectorAll('#matchFilterOverlay .pchip.active')].map(c => c.textContent);
+  closeMatchFilter();
+  const count = document.getElementById('matchCount');
+  if (count) count.textContent = '起業仲間候補：3人';
+}
+
+// ===== PROFILE EDIT =====
+const editSpecs = new Set(['エンジニア','プロダクトマネージャー','ビジネスディベロッパー']);
+function renderEditSpec() {
+  const g = document.getElementById('editSpecGrid');
+  if (!g) return;
+  g.innerHTML = '';
+  SPEC_LIST.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'spec-item' + (editSpecs.has(s) ? ' checked' : '');
+    d.innerHTML = `<div class="spec-cb"><svg class="spec-ck" width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5L3.5 6.5L7.5 2.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>${s}`;
+    d.onclick = () => { editSpecs.has(s) ? editSpecs.delete(s) : editSpecs.add(s); renderEditSpec(); };
+    g.appendChild(d);
+  });
+}
+function previewAvatar(input) {
+  if (!input.files || !input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('editAvatarPreview');
+    preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+function addCareerItem() {
+  const list = document.getElementById('editCareerList');
+  const div = document.createElement('div');
+  div.className = 'career-edit-item';
+  div.style.cssText = 'display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;';
+  div.innerHTML = `<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+    <input class="f-input" placeholder="役職・役割"/>
+    <input class="f-input" placeholder="会社・学校名"/>
+    <input class="f-input" placeholder="開始年（例：2019年）"/>
+    <input class="f-input" placeholder="終了年（例：2024年）"/>
+  </div>
+  <button onclick="this.closest('.career-edit-item').remove()" style="border:none;background:none;cursor:pointer;color:var(--text2);padding:4px;margin-top:6px;">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+  </button>`;
+  list.appendChild(div);
+}
+function saveProfile() {
+  const name = document.getElementById('edit-name').value || '田中 健太';
+  document.getElementById('sidebarName').textContent = name;
+  document.getElementById('sidebarAv').textContent = name.charAt(0);
+  document.getElementById('mobileUserAv').textContent = name.charAt(0);
+  go('profile', null);
+}
+
+
+
+// ===== NAVIGATION STATE =====
+let chatPrevPage = 'chat';
+let detailPrevPage = 'ideas';
+let founderPrevPage = 'detail';
+
+function detailGoBack() {
+  go(detailPrevPage, null);
+  if (detailPrevPage === 'chat' && window.innerWidth <= 640) {
+    document.getElementById('chatMainPane').classList.remove('hidden');
+    document.getElementById('chatListPane').classList.add('hidden');
+  }
+}
+
+function founderGoBack() {
+  go(founderPrevPage, null);
+}
+
+// チャットのctx-cardから詳細へ（アイデアタイトルで検索）
+function openIdeaDetailFromChat(title) {
+  const idea = IDEAS.find(i => i.title === title);
+  if (!idea) return;
+  chatPrevPage = 'chat';
+  detailPrevPage = 'chat';
+  document.getElementById('detailBackLabel').textContent = 'チャットに戻る';
+  openIdeaDetail(idea);
+}
+
+// ========== FOUNDER PROFILE ==========
+let currentFounder = null;
+
+function openFounderProfile(founder) {
+  if (typeof founder === 'string') founder = JSON.parse(founder);
+  currentFounder = founder;
+  founderPrevPage = 'detail';
+  document.getElementById('founderBackLabel').textContent = '詳細に戻る';
+  go('founder', null);
+
+  const c = document.getElementById('founderContent');
+  // ダミープロフィールデータ（実際はDBから取得）
+  const profiles = {
+    '山本 由紀': { age: '20代後半', gender: '女性', location: '東京都', bio: 'HRスタートアップで3年間プロダクトマネージャーとして勤務。採用面接の非効率さを身をもって体験し、AIで解決したいと思い起業を決意。現在は構想を固めながら、技術面を一緒に担ってくれるパートナーを探しています。', specs: ['ビジネスディベロッパー','プロダクトマネージャー'], career: [{role:'プロダクトマネージャー', co:'HR Techスタートアップ', period:'2021年 〜 2024年'},{role:'営業・マーケティング', co:'人材紹介会社', period:'2018年 〜 2021年'}], tags: ['HR Tech','EdTech','AI'] },
+    '佐々木 大輔': { age: '30代前半', gender: '男性', location: '愛知県', bio: '農業大学卒業後、農協に勤務。産地と消費者の距離を縮めたいという想いから独立し、直販プラットフォームを構想中。地方創生と農家の収益改善を同時に実現したい。', specs: ['ビジネスディベロッパー','セールス'], career: [{role:'農業アドバイザー', co:'農業協同組合', period:'2016年 〜 2024年'}], tags: ['フードテック','EC','農業'] },
+    '鈴木 花菜': { age: '30代後半', gender: '女性', location: '大阪府', bio: '薬剤師として病院勤務を経て、高齢者の服薬管理の課題を痛感。ITの力で解決したいと思い転身。医療×テックの橋渡しができる人材を探しています。', specs: ['ビジネスディベロッパー','広報・PR'], career: [{role:'薬剤師', co:'市立病院', period:'2010年 〜 2023年'}], tags: ['ヘルスケア','医療'] },
+  };
+  const p = profiles[founder.founderName] || { age: '30代前半', gender: '未回答', location: '東京都', bio: 'プロフィール情報を準備中です。', specs: [], career: [], tags: [] };
+
+  c.innerHTML = `
+    <div class="p-hero" style="margin-bottom:14px;">
+      <div class="hero-cover"></div>
+      <div class="hero-body">
+        <div class="av-row">
+          <div class="av-large" style="background:${founder.founderAvBg};color:${founder.founderAvColor};">${founder.founderAv}</div>
+        </div>
+        <div class="p-name-row">
+          <span class="p-name">${founder.founderName}</span>
+          <span class="role-badge">起業家</span>
+        </div>
+        <div class="p-sub">${p.location} · ${p.age} · ${p.gender} · ${founder.phase}</div>
+        <div class="p-bio">${p.bio}</div>
+        <div class="tags">
+          ${p.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+          <span class="tag-gray">${p.location}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px;">
+      <div class="section-heading">スペシャリティ</div>
+      <div>${p.specs.map(s => `<span class="spec-chip"><span class="chip-dot"></span>${s}</span>`).join('')}</div>
+    </div>
+
+    ${p.career.length > 0 ? `
+    <div class="card" style="margin-bottom:14px;">
+      <div class="section-heading">経歴</div>
+      ${p.career.map((item, i) => `
+        <div class="career-item">
+          <div class="dot-col"><div class="cdot"></div>${i < p.career.length - 1 ? '<div class="cline"></div>' : ''}</div>
+          <div>
+            <div class="career-role">${item.role}</div>
+            <div class="career-co">${item.co}</div>
+            <div class="career-period">${item.period}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>` : ''}
+
+    <div class="card" style="margin-bottom:14px;">
+      <div class="section-heading">掲載中のアイデア</div>
+      <div style="display:flex;gap:11px;align-items:center;cursor:pointer;" onclick="go('detail',null)">
+        <div style="width:36px;height:36px;border-radius:var(--radius);background:${founder.iconBg || '#EEF2FA'};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${founder.icon || '💡'}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;margin-bottom:2px;">${founder.title || ''}</div>
+          <div style="font-size:12px;color:var(--text2);">${founder.industry || ''}</div>
+        </div>
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="flex-shrink:0;color:var(--accent);"><path d="M4 2l5 4.5L4 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+  `;
+}
+
+function contactFounder() {
+  go('chat', document.getElementById('bn-chat'));
+  if (window.innerWidth <= 640) {
+    document.getElementById('chatListPane').classList.remove('hidden');
+    document.getElementById('chatMainPane').classList.add('hidden');
+  }
+}
+
+// ===== IDEA DETAIL =====
+let currentIdea = null;
+let appliedIdeas = {};
+
+function openIdeaDetail(idea) {
+  if (typeof idea === 'string') idea = JSON.parse(idea);
+  currentIdea = idea;
+  // prevPageが未設定の場合はideasから
+  if (detailPrevPage !== 'chat') {
+    detailPrevPage = 'ideas';
+    document.getElementById('detailBackLabel').textContent = 'アイデア一覧';
+  }
+  go('detail', null);
+  const c = document.getElementById('detailContent');
+  const applied = appliedIdeas[idea.title];
+  c.innerHTML = `
+    <div class="card" style="margin-bottom:14px;">
+      <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;">
+        <div style="width:52px;height:52px;border-radius:var(--radius);background:${idea.iconBg};display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">${idea.icon}</div>
+        <div>
+          <div style="font-size:15px;font-weight:500;margin-bottom:4px;">${idea.title}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${idea.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;padding:12px 0;border-top:0.5px solid var(--border);border-bottom:0.5px solid var(--border);margin-bottom:14px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1"/><path d="M6.5 3.5v3l2 2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+          ${idea.reward}
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.5C5 1.5 3.5 2.8 3.5 4.5c0 2.5 3 6.5 3 6.5s3-4 3-6.5c0-1.7-1.5-3-3-3Z" stroke="currentColor" stroke-width="1"/></svg>
+          ${idea.location}
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="2" width="10" height="9" rx="1.5" stroke="currentColor" stroke-width="1"/><path d="M1.5 5h10" stroke="currentColor" stroke-width="1"/></svg>
+          ${idea.industry}
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="4" r="2.5" stroke="currentColor" stroke-width="1"/><path d="M1.5 11.5c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+          ${idea.founderName} · ${idea.phase}
+        </div>
+      </div>
+      <div style="font-size:13px;line-height:1.75;color:var(--text);margin-bottom:16px;">${idea.desc}<br><br>私たちは「${idea.title}」を通じて、社会の課題を解決したいと考えています。まずは対話の中でアイデアを磨き、一緒に事業を作り上げられる仲間を探しています。経験の多少は問いません。この領域に強い関心と熱量を持って取り組める方をお待ちしています。</div>
+      <div style="margin-bottom:14px;">
+        <div class="section-heading">求めるスペシャリティ</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">${idea.specs.map(s => `<span class="spec-chip"><span class="chip-dot"></span>${s}</span>`).join('')}</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:14px;cursor:pointer;transition:border-color 0.12s;" onclick="openFounderProfile(${JSON.stringify({founderAv:idea.founderAv,founderAvBg:idea.founderAvBg,founderAvColor:idea.founderAvColor,founderName:idea.founderName,phase:idea.phase,industry:idea.industry,icon:idea.icon,title:idea.title}).replace(/"/g,'&quot;')})" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor=''">
+      <div class="section-heading">掲載者について</div>
+      <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;">
+        <div style="display:flex;gap:12px;align-items:center;">
+          <div class="av" style="width:46px;height:46px;font-size:16px;background:${idea.founderAvBg};color:${idea.founderAvColor};">${idea.founderAv}</div>
+          <div>
+            <div style="font-size:14px;font-weight:500;margin-bottom:2px;">${idea.founderName}</div>
+            <div style="font-size:12px;color:var(--text2);">${idea.phase} · ${idea.industry}</div>
+          </div>
+        </div>
+        <span style="font-size:12px;color:var(--accent);display:flex;align-items:center;gap:3px;flex-shrink:0;">プロフィールを見る <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M4 2l5 4.5L4 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+    </div>
+    ${applied ? `
+    <div style="background:#EEF2FA;border:0.5px solid var(--accent);border-radius:var(--radius-lg);padding:14px 16px;display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style="flex-shrink:0;margin-top:1px;"><circle cx="9" cy="9" r="7.5" stroke="var(--accent)" stroke-width="1.2"/><path d="M5.5 9l2.5 2.5L12.5 6" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div>
+        <div style="font-size:13px;font-weight:500;color:var(--accent);margin-bottom:3px;">応募済み</div>
+        <div style="font-size:12px;color:var(--text2);">応募理由：${applied}</div>
+      </div>
+    </div>` : ''}
+  `;
+  document.getElementById('detailApplyBtn').style.display = applied ? 'none' : '';
+  document.getElementById('detailApplyBtn').textContent = '応募する';
+}
+
+function openApplyFromDetail() {
+  if (currentIdea) openApply(currentIdea);
+}
+
+// ===== APPLY POPUP =====
+let applyingIdea = null;
+
+function buildIdeaCardHTML(idea) {
+  return `<div style="width:36px;height:36px;border-radius:var(--radius);background:${idea.iconBg};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${idea.icon}</div>
+  <div><div style="font-size:13px;font-weight:500;">${idea.title}</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">${idea.founderName} · ${idea.phase}</div></div>`;
+}
+
+function openApply(idea) {
+  if (typeof idea === 'string') idea = JSON.parse(idea);
+  applyingIdea = idea;
+  document.getElementById('applyReason').value = '';
+  document.getElementById('applyCharCount').textContent = '0';
+  document.getElementById('applyIdeaCard').innerHTML = buildIdeaCardHTML(idea);
+  document.getElementById('applyStep1').style.display = 'block';
+  document.getElementById('applyStep2').style.display = 'none';
+  document.getElementById('applyOverlay').classList.add('open');
+}
+
+function closeApply() {
+  document.getElementById('applyOverlay').classList.remove('open');
+}
+
+function submitApply() {
+  const reason = document.getElementById('applyReason').value.trim();
+  if (!reason) {
+    document.getElementById('applyReason').focus();
+    document.getElementById('applyReason').style.borderColor = '#DC2626';
+    setTimeout(() => document.getElementById('applyReason').style.borderColor = '', 1500);
+    return;
+  }
+  const idea = applyingIdea;
+  appliedIdeas[idea.title] = reason;
+
+  // チャットにメッセージ追加
+  addApplyMessage(idea, reason);
+
+  document.getElementById('applySuccessCard').innerHTML = buildIdeaCardHTML(idea);
+  document.getElementById('applyStep1').style.display = 'none';
+  document.getElementById('applyStep2').style.display = 'block';
+
+  // 詳細画面も更新
+  if (currentIdea && currentIdea.title === idea.title) {
+    openIdeaDetail(idea);
+  }
+  filterIdeas();
+}
+
+function addApplyMessage(idea, reason) {
+  const msgs = document.getElementById('chatMsgs');
+  if (!msgs) return;
+
+  // 日付区切り
+  const divider = document.createElement('div');
+  divider.className = 'date-div';
+  divider.innerHTML = `<span class="date-lbl">今日</span>`;
+
+  // コンテキストカード
+  const ctx = document.createElement('div');
+  ctx.className = 'ctx-card';
+  ctx.style.cursor = 'pointer';
+  ctx.onclick = () => {
+    chatPrevPage = 'chat';
+    openIdeaDetail(idea);
+  };
+  ctx.onmouseover = () => ctx.style.background = 'var(--bg2)';
+  ctx.onmouseout = () => ctx.style.background = '';
+  ctx.innerHTML = `
+    <div style="width:32px;height:32px;border-radius:var(--radius);background:${idea.iconBg};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${idea.icon}</div>
+    <div style="flex:1;min-width:0;"><div style="font-size:10px;color:var(--text2);margin-bottom:2px;">応募したアイデア</div><div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${idea.title}</div></div>
+    <span style="font-size:10px;background:var(--accent-bg);color:var(--accent);padding:2px 7px;border-radius:10px;margin-left:auto;flex-shrink:0;white-space:nowrap;">詳細 ›</span>
+  `;
+
+  // 応募メッセージ（自分のバブル）
+  const msg = document.createElement('div');
+  msg.className = 'msg mine';
+  const now = new Date();
+  const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+  msg.innerHTML = `<div>
+    <div style="font-size:10px;color:var(--text2);text-align:right;margin-bottom:4px;margin-right:4px;">📝 応募理由</div>
+    <div class="bubble bubble-mine">${reason}</div>
+    <div class="msg-time" style="margin-top:3px;text-align:right;margin-right:4px;">${time} <span style="color:#93C5FD;">✓✓</span></div>
+  </div>`;
+
+  msgs.appendChild(divider);
+  msgs.appendChild(ctx);
+  msgs.appendChild(msg);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // チャットリストに新着スレッド追加
+  addChatThread(idea);
+}
+
+function addChatThread(idea) {
+  const list = document.querySelector('.thread-list');
+  if (!list) return;
+  // 既存チェック
+  if (document.getElementById('thread-' + idea.founderAv + idea.founderName)) return;
+  const thread = document.createElement('div');
+  thread.className = 'thread';
+  thread.id = 'thread-' + idea.founderAv + idea.founderName;
+  thread.onclick = () => {
+    document.querySelectorAll('.thread').forEach(t => t.classList.remove('active'));
+    thread.classList.add('active');
+    if (window.innerWidth <= 640) {
+      document.getElementById('chatListPane').classList.add('hidden');
+      document.getElementById('chatMainPane').classList.remove('hidden');
+    }
+  };
+  const now = new Date();
+  thread.innerHTML = `
+    <div class="av-wrap">
+      <div class="av" style="width:36px;height:36px;font-size:13px;background:${idea.founderAvBg};color:${idea.founderAvColor};">${idea.founderAv}</div>
+      <div class="status-dot" style="background:#D1D5DB;"></div>
+    </div>
+    <div class="thread-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span class="thread-name">${idea.founderName}</span>
+        <span style="font-size:10px;color:var(--text2);">今</span>
+      </div>
+      <div class="thread-preview">📝 応募理由を送信しました</div>
+      <div class="thread-login recent">
+        <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><circle cx="4.5" cy="4.5" r="3.5" stroke="currentColor" stroke-width="1"/><path d="M4.5 2.5v2l1.2 1.2" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+        たった今
+      </div>
+    </div>
+    <div class="unread-badge">1</div>
+  `;
+  list.insertBefore(thread, list.firstChild);
+}
+
+function goToChat() {
+  closeApply();
+  go('chat', document.getElementById('bn-chat'));
+  if (window.innerWidth <= 640) {
+    document.getElementById('chatListPane').classList.remove('hidden');
+    document.getElementById('chatMainPane').classList.add('hidden');
+  }
+}
+
+renderSpec();
+renderSpecFilterChips();
+renderOtherCondGrid();
+filterIdeas();
+initChat();
+renderEditSpec();
+</script>
+
+  <!-- AUTH OVERLAY -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="auth-logo-icon">
+          <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+            <path d="M9 2C9 2 5 5.5 5 10C5 12.2 6.8 14 9 14C11.2 14 13 12.2 13 10C13 5.5 9 2 9 2Z" fill="white"/>
+            <path d="M6.5 14L5 17H7L8 15" fill="white" opacity="0.7"/>
+            <path d="M11.5 14L13 17H11L10 15" fill="white" opacity="0.7"/>
+            <circle cx="9" cy="10" r="1.5" fill="#1E3A5F"/>
+          </svg>
+        </div>
+        <span class="auth-logo-text">Rocket</span>
+      </div>
+
+      <!-- Login form -->
+      <div id="loginForm">
+        <div class="auth-title">ログイン</div>
+        <div class="auth-sub">起業の仲間と出会う場所へ</div>
+        <div class="auth-error" id="loginError">メールアドレスまたはパスワードが正しくありません</div>
+        <div class="auth-field">
+          <div class="auth-label">メールアドレス</div>
+          <input class="auth-input" type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email"/>
+        </div>
+        <div class="auth-field">
+          <div class="auth-label">パスワード</div>
+          <input class="auth-input" type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+        </div>
+        <button class="auth-btn" onclick="doLogin()">ログイン</button>
+        <div class="auth-divider"><div class="auth-divider-line"></div><span class="auth-divider-text">または</span><div class="auth-divider-line"></div></div>
+        <button class="auth-social" onclick="doSocialLogin()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7.5" stroke="var(--border2)" stroke-width="0.5"/><path d="M13.5 8.18c0-.3-.03-.6-.07-.88H8v1.66h3.09a2.65 2.65 0 0 1-1.15 1.74v1.44h1.86c1.09-1 1.71-2.48 1.71-4Z" fill="#4285F4"/><path d="M8 14a6.47 6.47 0 0 0 4.49-1.64l-1.86-1.44A4.09 4.09 0 0 1 8 12.1a4.09 4.09 0 0 1-3.84-2.82H2.23v1.49A6.5 6.5 0 0 0 8 14Z" fill="#34A853"/><path d="M4.16 9.28A4.14 4.14 0 0 1 3.94 8c0-.44.08-.87.22-1.28V5.23H2.23A6.5 6.5 0 0 0 1.5 8c0 1.05.25 2.04.7 2.91l1.96-1.63Z" fill="#FBBC05"/><path d="M8 3.9a3.52 3.52 0 0 1 2.49 1l1.87-1.87A6.25 6.25 0 0 0 8 1.5a6.5 6.5 0 0 0-5.78 3.5L4.16 6.72A4.09 4.09 0 0 1 8 3.9Z" fill="#EA4335"/></svg>
+          Googleでログイン
+        </button>
+        <div class="auth-switch">アカウントをお持ちでない方は<a onclick="showSignup()">新規登録</a></div>
+      </div>
+
+      <!-- Signup form -->
+      <div id="signupForm" style="display:none;">
+        <div class="auth-title">新規登録</div>
+        <div class="auth-sub">起業前の仲間探しをはじめよう</div>
+        <div class="auth-error" id="signupError">このメールアドレスはすでに使用されています</div>
+        <div class="auth-field">
+          <div class="auth-label">お名前</div>
+          <input class="auth-input" type="text" id="signupName" placeholder="田中 健太" autocomplete="name"/>
+        </div>
+        <div class="auth-field">
+          <div class="auth-label">メールアドレス</div>
+          <input class="auth-input" type="email" id="signupEmail" placeholder="you@example.com" autocomplete="email"/>
+        </div>
+        <div class="auth-field">
+          <div class="auth-label">パスワード（8文字以上）</div>
+          <input class="auth-input" type="password" id="signupPassword" placeholder="••••••••" autocomplete="new-password" onkeydown="if(event.key==='Enter')doSignup()"/>
+        </div>
+        <div style="margin:14px 0 4px;display:flex;flex-direction:column;gap:10px;">
+          <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:13px;color:var(--text);">
+            <input type="checkbox" id="agreeTerms" style="margin-top:2px;accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;" onchange="checkTerms()"/>
+            <span><a href="#" style="color:var(--accent);">利用規約</a>に同意します</span>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:13px;color:var(--text);">
+            <input type="checkbox" id="agreePrivacy" style="margin-top:2px;accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;" onchange="checkTerms()"/>
+            <span><a href="#" style="color:var(--accent);">プライバシーポリシー</a>に同意します</span>
+          </label>
+        </div>
+        <button class="auth-btn" id="signupSubmitBtn" onclick="doSignup()" style="opacity:0.4;pointer-events:none;">登録する</button>
+        <div class="auth-divider"><div class="auth-divider-line"></div><span class="auth-divider-text">または</span><div class="auth-divider-line"></div></div>
+        <button class="auth-social" onclick="doSocialLogin()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7.5" stroke="var(--border2)" stroke-width="0.5"/><path d="M13.5 8.18c0-.3-.03-.6-.07-.88H8v1.66h3.09a2.65 2.65 0 0 1-1.15 1.74v1.44h1.86c1.09-1 1.71-2.48 1.71-4Z" fill="#4285F4"/><path d="M8 14a6.47 6.47 0 0 0 4.49-1.64l-1.86-1.44A4.09 4.09 0 0 1 8 12.1a4.09 4.09 0 0 1-3.84-2.82H2.23v1.49A6.5 6.5 0 0 0 8 14Z" fill="#34A853"/><path d="M4.16 9.28A4.14 4.14 0 0 1 3.94 8c0-.44.08-.87.22-1.28V5.23H2.23A6.5 6.5 0 0 0 1.5 8c0 1.05.25 2.04.7 2.91l1.96-1.63Z" fill="#FBBC05"/><path d="M8 3.9a3.52 3.52 0 0 1 2.49 1l1.87-1.87A6.25 6.25 0 0 0 8 1.5a6.5 6.5 0 0 0-5.78 3.5L4.16 6.72A4.09 4.09 0 0 1 8 3.9Z" fill="#EA4335"/></svg>
+          Googleで登録
+        </button>
+        <div class="auth-switch">すでにアカウントをお持ちの方は<a onclick="showLogin()">ログイン</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MATCH FILTER POPUP -->
+  <div class="popup-overlay" id="matchFilterOverlay" onclick="if(event.target===this)closeMatchFilter()">
+    <div class="popup-sheet">
+      <div class="popup-handle"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <span class="popup-title" style="margin-bottom:0;">絞り込み</span>
+        <button onclick="closeMatchFilter()" style="border:none;background:none;cursor:pointer;color:var(--text2);padding:4px;">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="popup-section">
+        <div class="popup-label">年齢</div>
+        <div class="popup-chips" id="mf-age">
+          <div class="pchip" onclick="togglePchip(this,'age')">10代</div>
+          <div class="pchip" onclick="togglePchip(this,'age')">20代前半</div>
+          <div class="pchip" onclick="togglePchip(this,'age')">20代後半</div>
+          <div class="pchip" onclick="togglePchip(this,'age')">30代前半</div>
+          <div class="pchip" onclick="togglePchip(this,'age')">30代後半</div>
+          <div class="pchip" onclick="togglePchip(this,'age')">40代前半</div>
+          <div class="pchip" onclick="togglePchip(this,'age')">40代後半</div>
+          <div class="pchip" onclick="togglePchip(this,'age')">50代以上</div>
+        </div>
+      </div>
+      <div class="popup-section">
+        <div class="popup-label">性別</div>
+        <div class="popup-chips" id="mf-gender">
+          <div class="pchip" onclick="togglePchip(this,'gender')">男性</div>
+          <div class="pchip" onclick="togglePchip(this,'gender')">女性</div>
+          <div class="pchip" onclick="togglePchip(this,'gender')">未回答</div>
+        </div>
+      </div>
+      <div class="popup-section">
+        <div class="popup-label">スペシャリティ</div>
+        <div class="popup-chips" id="mf-spec">
+          <div class="pchip" onclick="togglePchip(this,'spec')">エンジニア</div>
+          <div class="pchip" onclick="togglePchip(this,'spec')">デザイナー</div>
+          <div class="pchip" onclick="togglePchip(this,'spec')">マーケター</div>
+          <div class="pchip" onclick="togglePchip(this,'spec')">セールス</div>
+          <div class="pchip" onclick="togglePchip(this,'spec')">プロダクトマネージャー</div>
+          <div class="pchip" onclick="togglePchip(this,'spec')">ビジネスディベロッパー</div>
+          <div class="pchip" onclick="togglePchip(this,'spec')">広報・PR</div>
+          <div class="pchip" onclick="togglePchip(this,'spec')">バックオフィス</div>
+        </div>
+      </div>
+      <div class="popup-section">
+        <div class="popup-label">場所</div>
+        <div class="popup-chips" id="mf-location">
+          <div class="pchip" onclick="togglePchip(this,'location')">フルリモート可</div>
+          <div class="pchip" onclick="togglePchip(this,'location')">対面希望</div>
+          <div class="pchip" onclick="togglePchip(this,'location')">応相談</div>
+        </div>
+      </div>
+      <div class="popup-section">
+        <div class="popup-label">その他の条件</div>
+        <div class="popup-chips" id="mf-other">
+          <div class="pchip" onclick="togglePchip(this,'other')">夜間のみでもOK</div>
+          <div class="pchip" onclick="togglePchip(this,'other')">週末のみでもOK</div>
+          <div class="pchip" onclick="togglePchip(this,'other')">隙間時間でOK</div>
+          <div class="pchip" onclick="togglePchip(this,'other')">初心者歓迎</div>
+          <div class="pchip" onclick="togglePchip(this,'other')">経験者優遇</div>
+        </div>
+      </div>
+      <div class="popup-footer">
+        <button class="btn" style="flex:1;" onclick="resetMatchFilter()">リセット</button>
+        <button class="btn btn-primary" style="flex:2;" onclick="applyMatchFilter()">この条件で絞り込む</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLY POPUP -->
+  <div class="apply-overlay" id="applyOverlay" onclick="if(event.target===this)closeApply()">
+    <div class="apply-sheet" id="applySheet">
+      <div class="apply-handle"></div>
+      <div id="applyStep1">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <span style="font-size:15px;font-weight:500;">応募する</span>
+          <button onclick="closeApply()" style="border:none;background:none;cursor:pointer;color:var(--text2);padding:4px;">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <div class="apply-idea-card" id="applyIdeaCard"></div>
+        <div class="apply-hint">
+          💡 応募理由はそのまま最初のメッセージとして相手に届きます。あなたのモチベーションや強みを具体的に伝えましょう。
+        </div>
+        <div class="apply-label">応募理由 <span style="color:#DC2626;font-size:11px;">必須</span></div>
+        <textarea class="apply-textarea" id="applyReason" placeholder="例：以前HR Techの企業でエンジニアをしており、採用面接の課題は自分も強く感じていました。技術面でぜひ貢献したいと思い応募しました。" maxlength="500" oninput="document.getElementById('applyCharCount').textContent=this.value.length"></textarea>
+        <div class="apply-char"><span id="applyCharCount">0</span> / 500</div>
+        <div class="apply-footer">
+          <button class="btn" style="flex:1;" onclick="closeApply()">キャンセル</button>
+          <button class="btn btn-primary" style="flex:2;" onclick="submitApply()">応募を送信する</button>
+        </div>
+      </div>
+      <div id="applyStep2" style="display:none;">
+        <div class="apply-success">
+          <div class="apply-success-icon">
+            <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><circle cx="13" cy="13" r="11" stroke="var(--accent)" stroke-width="1.5"/><path d="M8 13l3.5 3.5L18 9" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div style="font-size:16px;font-weight:500;margin-bottom:6px;">応募を送信しました！</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:20px;">応募理由がメッセージとして送信されました。<br>チャット画面で返信を確認できます。</div>
+          <div class="apply-idea-card" id="applySuccessCard" style="text-align:left;"></div>
+        </div>
+        <div class="apply-footer" style="margin-top:16px;">
+          <button class="btn" style="flex:1;" onclick="closeApply()">閉じる</button>
+          <button class="btn btn-primary" style="flex:2;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="goToChat()">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 3A1.5 1.5 0 0 1 3.5 1.5h7A1.5 1.5 0 0 1 12 3v5A1.5 1.5 0 0 1 10.5 10H8L5.5 12.5V10H3.5A1.5 1.5 0 0 1 2 8.5V3Z" stroke="white" stroke-width="1.1"/></svg>
+            チャットを確認する
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
