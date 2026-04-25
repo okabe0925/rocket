@@ -1,5 +1,124 @@
 <!DOCTYPE html>
 <html lang="ja">
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://imkzxnxlklanxgpccxxy.supabase.co/rest/v1/';
+const SUPABASE_KEY = 'sb_publishable_Vjgj4GXTYGOQCUXF_7laxQ_Wn7SDqQS';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  if (!email || !pass) {
+    errEl.textContent = 'メールアドレスとパスワードを入力してください';
+    errEl.classList.add('show'); return;
+  }
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    errEl.textContent = 'メールアドレスまたはパスワードが正しくありません';
+    errEl.classList.add('show');
+    document.getElementById('loginPassword').value = ''; return;
+  }
+  const profile = await getProfile(data.user.id);
+  loginSuccess({ name: profile?.name || 'ユーザー', email });
+}
+
+async function doSignup() {
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const pass = document.getElementById('signupPassword').value;
+  const errEl = document.getElementById('signupError');
+  if (!name || !email || !pass) {
+    errEl.textContent = 'すべての項目を入力してください';
+    errEl.classList.add('show'); return;
+  }
+  if (pass.length < 8) {
+    errEl.textContent = 'パスワードは8文字以上で設定してください';
+    errEl.classList.add('show'); return;
+  }
+  if (!document.getElementById('agreeTerms').checked || !document.getElementById('agreePrivacy').checked) {
+    errEl.textContent = '利用規約とプライバシーポリシーに同意してください';
+    errEl.classList.add('show'); return;
+  }
+  const { data, error } = await sb.auth.signUp({ email, password: pass });
+  if (error) {
+    errEl.textContent = '登録に失敗しました: ' + error.message;
+    errEl.classList.add('show'); return;
+  }
+  await sb.from('profiles').insert({ id: data.user.id, name });
+  signupSuccess(name, email);
+}
+
+async function doSocialLogin() {
+  await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin }
+  });
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  currentUser = null;
+  document.getElementById('userMenu').classList.remove('open');
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginError').classList.remove('show');
+  showLogin();
+  document.getElementById('authOverlay').style.display = 'flex';
+}
+
+async function getProfile(userId) {
+  const { data } = await sb.from('profiles').select('*').eq('id', userId).single();
+  return data;
+}
+
+async function saveProfile() {
+  const name = document.getElementById('edit-name').value.trim() || 'ユーザー';
+  const age = document.getElementById('edit-age').value;
+  const gender = document.querySelector('input[name="gender"]:checked')?.value || '';
+  const location = document.getElementById('edit-location').value.trim();
+  const bio = document.getElementById('edit-bio').value.trim();
+  const specs = [...editSpecs];
+  const { data: { user } } = await sb.auth.getUser();
+  if (user) {
+    await sb.from('profiles').upsert({
+      id: user.id, name, age, gender, location, bio, specialties: specs
+    });
+  }
+  updateUserUI(name);
+  const pName = document.getElementById('profileName');
+  if (pName) pName.textContent = name;
+  const pSub = document.getElementById('profileSub');
+  if (pSub) {
+    const parts = [location, age, gender].filter(Boolean);
+    pSub.textContent = parts.length > 0 ? parts.join(' · ') + ' · 最終ログイン：たった今' : '最終ログイン：たった今';
+  }
+  const pBio = document.getElementById('profileBio');
+  if (pBio) {
+    pBio.textContent = bio || '自己紹介が設定されていません';
+    pBio.style.color = bio ? 'var(--text)' : 'var(--text2)';
+  }
+  const pSpecs = document.getElementById('profileSpecs');
+  if (pSpecs) {
+    pSpecs.innerHTML = specs.length > 0
+      ? specs.map(s => `<span class="spec-chip"><span class="chip-dot"></span>${s}</span>`).join('')
+      : '<span style="color:var(--text2);font-size:13px;">未設定</span>';
+  }
+  const banner = document.getElementById('profileSetupBanner');
+  if (banner) banner.remove();
+  if (currentUser) currentUser.isNew = false;
+  go('profile', null);
+}
+
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    const profile = await getProfile(session.user.id);
+    loginSuccess({ name: profile?.name || 'ユーザー', email: session.user.email });
+  }
+})();
+</script>
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
